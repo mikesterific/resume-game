@@ -317,14 +317,15 @@ export class ResumeTowerScene extends Phaser.Scene {
     let nearestDistance = Infinity
 
     this.resumeBooks.children.entries.forEach(book => {
+      const bookSprite = book as Phaser.GameObjects.Sprite
       const distance = Phaser.Math.Distance.Between(
         this.player.x, this.player.y,
-        book.x, book.y
+        bookSprite.x, bookSprite.y
       )
 
       if (distance < 90 && distance < nearestDistance) {
         nearestDistance = distance
-        nearestBook = book
+        nearestBook = bookSprite
       }
     })
 
@@ -332,7 +333,8 @@ export class ResumeTowerScene extends Phaser.Scene {
       this.nearestBook = nearestBook
       
       if (this.nearestBook) {
-        const resumeData = this.nearestBook.getData('resumeData')
+        const bookSprite = this.nearestBook as Phaser.GameObjects.Sprite
+        const resumeData = bookSprite.getData('resumeData')
         this.interactionPrompt.setText(`Press SPACE to view ${resumeData.title}`)
         this.interactionPrompt.setVisible(true)
       } else {

@@ -216,14 +216,15 @@ export class SkillVillageScene extends Phaser.Scene {
     let nearestDistance = Infinity
 
     this.skillNPCs.children.entries.forEach(npc => {
+      const npcSprite = npc as Phaser.GameObjects.Sprite
       const distance = Phaser.Math.Distance.Between(
         this.player.x, this.player.y,
-        npc.x, npc.y
+        npcSprite.x, npcSprite.y
       )
 
       if (distance < 80 && distance < nearestDistance) {
         nearestDistance = distance
-        nearestNPC = npc
+        nearestNPC = npcSprite
       }
     })
 
@@ -231,7 +232,8 @@ export class SkillVillageScene extends Phaser.Scene {
       this.nearestNPC = nearestNPC
       
       if (this.nearestNPC) {
-        const skillData = this.nearestNPC.getData('skillData')
+        const npcSprite = this.nearestNPC as Phaser.GameObjects.Sprite
+        const skillData = npcSprite.getData('skillData')
         this.interactionPrompt.setText(`Press SPACE to learn about ${skillData.name}`)
         this.interactionPrompt.setVisible(true)
       } else {

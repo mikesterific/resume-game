@@ -279,14 +279,15 @@ export class ProjectForestScene extends Phaser.Scene {
     let nearestDistance = Infinity
 
     this.projectChests.children.entries.forEach(chest => {
+      const chestSprite = chest as Phaser.GameObjects.Sprite
       const distance = Phaser.Math.Distance.Between(
         this.player.x, this.player.y,
-        chest.x, chest.y
+        chestSprite.x, chestSprite.y
       )
 
       if (distance < 100 && distance < nearestDistance) {
         nearestDistance = distance
-        nearestChest = chest
+        nearestChest = chestSprite
       }
     })
 
@@ -294,7 +295,8 @@ export class ProjectForestScene extends Phaser.Scene {
       this.nearestChest = nearestChest
       
       if (this.nearestChest) {
-        const projectData = this.nearestChest.getData('projectData')
+        const chestSprite = this.nearestChest as Phaser.GameObjects.Sprite
+        const projectData = chestSprite.getData('projectData')
         this.interactionPrompt.setText(`Press SPACE to explore ${projectData.title}`)
         this.interactionPrompt.setVisible(true)
       } else {

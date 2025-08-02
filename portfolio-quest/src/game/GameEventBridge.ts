@@ -1,16 +1,15 @@
-import { EventEmitter } from 'events'
 import type { GameEvents, GameEventType, GameEventData } from '@/types/game'
 
 /**
- * Event bridge for communication between Phaser game and Vue components
+ * Simple event system for communication between Phaser game and Vue components
  * This singleton class manages all communication between the game engine and UI
  */
-class GameEventBridge extends EventEmitter {
+class GameEventBridge {
   private static instance: GameEventBridge
+  private listeners: Map<string, Function[]> = new Map()
   
   private constructor() {
-    super()
-    this.setMaxListeners(100) // Increase limit for multiple listeners
+    // Browser-compatible event system
   }
 
   public static getInstance(): GameEventBridge {
@@ -28,7 +27,9 @@ class GameEventBridge extends EventEmitter {
     data: GameEventData<T>
   ): boolean {
     console.log(`[GameEventBridge] Emitting: ${event}`, data)
-    return this.emit(event, data)
+    const eventListeners = this.listeners.get(event) || []
+    eventListeners.forEach(listener => listener(data))
+    return eventListeners.length > 0
   }
 
   /**
@@ -39,7 +40,11 @@ class GameEventBridge extends EventEmitter {
     listener: (data: GameEventData<T>) => void
   ): this {
     console.log(`[GameEventBridge] Listening for: ${event}`)
-    return this.on(event, listener)
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, [])
+    }
+    this.listeners.get(event)!.push(listener)
+    return this
   }
 
   /**
@@ -49,21 +54,31 @@ class GameEventBridge extends EventEmitter {
     event: T,
     listener: (data: GameEventData<T>) => void
   ): this {
-    return this.off(event, listener)
+    const eventListeners = this.listeners.get(event) || []
+    const index = eventListeners.indexOf(listener)
+    if (index > -1) {
+      eventListeners.splice(index, 1)
+    }
+    return this
   }
 
   /**
    * Remove all listeners for an event
    */
   public removeAllGameListeners<T extends GameEventType>(event?: T): this {
-    return this.removeAllListeners(event)
+    if (event) {
+      this.listeners.delete(event)
+    } else {
+      this.listeners.clear()
+    }
+    return this
   }
 
   /**
    * Get active listener count for debugging
    */
   public getListenerCount<T extends GameEventType>(event: T): number {
-    return this.listenerCount(event)
+    return (this.listeners.get(event) || []).length
   }
 }
 

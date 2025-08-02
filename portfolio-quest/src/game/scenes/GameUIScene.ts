@@ -71,7 +71,8 @@ export class GameUIScene extends Phaser.Scene {
 
   private setupEventListeners(): void {
     // Listen for scene changes from other scenes
-    this.scene.manager.on('start', (event: any, scene: Phaser.Scene) => {
+    const sceneManager = this.scene.manager as any // Type assertion for events
+    sceneManager.on('start', (event: any, scene: Phaser.Scene) => {
       if (scene.scene.key !== 'GameUIScene') {
         this.updateCurrentSceneDisplay(scene.scene.key)
         gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: scene.scene.key })
