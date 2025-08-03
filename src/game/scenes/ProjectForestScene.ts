@@ -156,6 +156,7 @@ export class ProjectForestScene extends Phaser.Scene {
       chest.setData('isChest', true)
       
       // Add interactive behavior
+      chest.setSize(60, 50)
       chest.setInteractive()
       chest.on('pointerdown', () => this.openProject(project.id))
       
@@ -211,6 +212,7 @@ export class ProjectForestScene extends Phaser.Scene {
       this.add.text(0, -10, '🏘️', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Skill\nVillage', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    villagePortal.setSize(60, 80)
     villagePortal.setInteractive()
     villagePortal.on('pointerdown', () => this.goToScene('SkillVillageScene'))
 
@@ -221,6 +223,7 @@ export class ProjectForestScene extends Phaser.Scene {
       this.add.text(0, -10, '🏰', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Résumé\nTower', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    towerPortal.setSize(60, 80)
     towerPortal.setInteractive()
     towerPortal.on('pointerdown', () => this.goToScene('ResumeTowerScene'))
   }

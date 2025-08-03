@@ -8,9 +8,11 @@ import gameEventBridge from '../GameEventBridge'
 export class SkillVillageScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle
   private skillNPCs: Phaser.GameObjects.Group | null = null
+  private portals: Phaser.GameObjects.Group | null = null
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private interactionPrompt!: Phaser.GameObjects.Text
   private nearestNPC: Phaser.GameObjects.GameObject | null = null
+  private nearestPortal: Phaser.GameObjects.GameObject | null = null
 
   constructor() {
     super({ key: 'SkillVillageScene' })
@@ -24,6 +26,20 @@ export class SkillVillageScene extends Phaser.Scene {
     this.createSkillNPCs()
     this.setupControls()
     this.setupUI()
+    
+    // Test global click detection
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      console.log('[SkillVillageScene] Global click detected at:', pointer.x, pointer.y)
+    })
+    
+    // Test mouse movement
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      console.log('[SkillVillageScene] Mouse move detected at:', pointer.x, pointer.y)
+    })
+    
+    // Test if the game canvas has focus
+    console.log('[SkillVillageScene] Game canvas element:', this.game.canvas)
+    console.log('[SkillVillageScene] Input enabled:', this.input.enabled)
     
     // Start this scene as the initial scene
     this.scene.setActive(true)
@@ -101,6 +117,7 @@ export class SkillVillageScene extends Phaser.Scene {
       npc.setData('isNPC', true)
       
       // Add interactive behavior
+      npc.setSize(48, 48)
       npc.setInteractive()
       npc.on('pointerdown', () => this.interactWithSkill(skill.id))
       
@@ -116,7 +133,13 @@ export class SkillVillageScene extends Phaser.Scene {
     
     // Space for interaction
     this.input.keyboard!.on('keydown-SPACE', () => {
-      if (this.nearestNPC) {
+      if (this.nearestPortal) {
+        const portalData = this.nearestPortal.getData('portalData')
+        if (portalData) {
+          console.log('[SkillVillageScene] Portal activated via SPACE:', portalData.name)
+          this.goToScene(portalData.targetScene)
+        }
+      } else if (this.nearestNPC) {
         const skillData = this.nearestNPC.getData('skillData')
         if (skillData) {
           this.interactWithSkill(skillData.id)
@@ -150,7 +173,9 @@ export class SkillVillageScene extends Phaser.Scene {
   }
 
   private createPortals(): void {
+    this.portals = this.add.group()
     const { width, height } = this.scale
+    console.log('[SkillVillageScene] Creating portals...')
 
     // Portal to Project Forest
     const forestPortal = this.add.container(50, height / 2)
@@ -159,8 +184,28 @@ export class SkillVillageScene extends Phaser.Scene {
       this.add.text(0, -10, '🌲', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Project\nForest', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    
+    // Add physics for proximity detection
+    this.physics.add.existing(forestPortal, true)
+    
+    // Store portal data
+    forestPortal.setData('portalData', { 
+      id: 'forest', 
+      name: 'Project Forest', 
+      targetScene: 'ProjectForestScene' 
+    })
+    forestPortal.setData('isPortal', true)
+    
+    // Keep click interaction as backup
+    forestPortal.setSize(60, 80)
     forestPortal.setInteractive()
-    forestPortal.on('pointerdown', () => this.goToScene('ProjectForestScene'))
+    forestPortal.on('pointerdown', () => {
+      console.log('[SkillVillageScene] Forest portal clicked!')
+      this.goToScene('ProjectForestScene')
+    })
+    
+    this.portals!.add(forestPortal)
+    console.log('[SkillVillageScene] Forest portal created at:', 50, height / 2)
 
     // Portal to Resume Tower
     const towerPortal = this.add.container(width - 50, height / 2)
@@ -169,8 +214,28 @@ export class SkillVillageScene extends Phaser.Scene {
       this.add.text(0, -10, '🏰', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Résumé\nTower', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    
+    // Add physics for proximity detection
+    this.physics.add.existing(towerPortal, true)
+    
+    // Store portal data
+    towerPortal.setData('portalData', { 
+      id: 'tower', 
+      name: 'Résumé Tower', 
+      targetScene: 'ResumeTowerScene' 
+    })
+    towerPortal.setData('isPortal', true)
+    
+    // Keep click interaction as backup
+    towerPortal.setSize(60, 80)
     towerPortal.setInteractive()
-    towerPortal.on('pointerdown', () => this.goToScene('ResumeTowerScene'))
+    towerPortal.on('pointerdown', () => {
+      console.log('[SkillVillageScene] Tower portal clicked!')
+      this.goToScene('ResumeTowerScene')
+    })
+    
+    this.portals!.add(towerPortal)
+    console.log('[SkillVillageScene] Tower portal created at:', width - 50, height / 2)
   }
 
   private interactWithSkill(skillId: string): void {
@@ -180,12 +245,15 @@ export class SkillVillageScene extends Phaser.Scene {
 
   private goToScene(sceneName: string): void {
     console.log(`[SkillVillageScene] Transitioning to: ${sceneName}`)
+    console.log(`[SkillVillageScene] Calling scene.start with: ${sceneName}`)
     gameEventBridge.emitGameEvent('game:scene-starting', { sceneName })
     this.scene.start(sceneName)
+    console.log(`[SkillVillageScene] Scene transition call completed`)
   }
 
   update(): void {
     this.handlePlayerMovement()
+    this.checkPortalProximity()
     this.checkNPCProximity()
   }
 
@@ -210,8 +278,42 @@ export class SkillVillageScene extends Phaser.Scene {
     }
   }
 
+  private checkPortalProximity(): void {
+    if (!this.portals) return
+
+    let nearestPortal: Phaser.GameObjects.GameObject | null = null
+    let nearestDistance = Infinity
+
+    this.portals.children.entries.forEach(portal => {
+      const portalSprite = portal as Phaser.GameObjects.Sprite
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x, this.player.y,
+        portalSprite.x, portalSprite.y
+      )
+
+      if (distance < 100 && distance < nearestDistance) {
+        nearestDistance = distance
+        nearestPortal = portalSprite
+      }
+    })
+
+    if (nearestPortal !== this.nearestPortal) {
+      this.nearestPortal = nearestPortal
+      
+      if (this.nearestPortal) {
+        const portalSprite = this.nearestPortal as Phaser.GameObjects.Sprite
+        const portalData = portalSprite.getData('portalData')
+        this.interactionPrompt.setText(`Press SPACE to travel to ${portalData.name}`)
+        this.interactionPrompt.setVisible(true)
+        console.log('[SkillVillageScene] Near portal:', portalData.name)
+      } else if (!this.nearestNPC) {
+        this.interactionPrompt.setVisible(false)
+      }
+    }
+  }
+
   private checkNPCProximity(): void {
-    if (!this.skillNPCs) return
+    if (!this.skillNPCs || this.nearestPortal) return // Portal takes priority
 
     let nearestNPC: Phaser.GameObjects.GameObject | null = null
     let nearestDistance = Infinity
@@ -232,12 +334,12 @@ export class SkillVillageScene extends Phaser.Scene {
     if (nearestNPC !== this.nearestNPC) {
       this.nearestNPC = nearestNPC
       
-      if (this.nearestNPC) {
+      if (this.nearestNPC && !this.nearestPortal) {
         const npcSprite = this.nearestNPC as Phaser.GameObjects.Sprite
         const skillData = npcSprite.getData('skillData')
         this.interactionPrompt.setText(`Press SPACE to learn about ${skillData.name}`)
         this.interactionPrompt.setVisible(true)
-      } else {
+      } else if (!this.nearestPortal) {
         this.interactionPrompt.setVisible(false)
       }
     }

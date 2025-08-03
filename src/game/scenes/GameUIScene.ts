@@ -101,21 +101,47 @@ export class GameUIScene extends Phaser.Scene {
   }
 
   private toggleSound(): void {
-    const currentSoundState = this.soundButton.text.includes('ON')
-    const newSoundState = !currentSoundState
-    
-    this.updateSoundButton(newSoundState)
-    gameEventBridge.emitGameEvent('ui:setting-changed', { 
-      key: 'soundEnabled', 
-      value: newSoundState 
-    })
+    // Safety check to prevent errors during hot reload
+    if (!this.soundButton || !this.soundButton.scene || !this.soundButton.active) {
+      console.warn('[GameUIScene] Sound button is not available, skipping toggle')
+      return
+    }
+
+    try {
+      const currentSoundState = this.soundButton.text.includes('ON')
+      const newSoundState = !currentSoundState
+      
+      this.updateSoundButton(newSoundState)
+      gameEventBridge.emitGameEvent('ui:setting-changed', { 
+        key: 'soundEnabled', 
+        value: newSoundState 
+      })
+    } catch (error) {
+      console.warn('[GameUIScene] Error toggling sound:', error)
+    }
   }
 
   private updateSoundButton(soundEnabled: boolean): void {
-    this.soundButton.setText(soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF')
+    // Safety check to prevent errors during hot reload
+    if (!this.soundButton || !this.soundButton.scene || !this.soundButton.active) {
+      console.warn('[GameUIScene] Sound button is not available, skipping update')
+      return
+    }
+
+    try {
+      this.soundButton.setText(soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF')
+    } catch (error) {
+      console.warn('[GameUIScene] Error updating sound button:', error)
+    }
   }
 
   private updateCurrentSceneDisplay(sceneName: string): void {
+    // Safety check to prevent errors during hot reload
+    if (!this.currentSceneText || !this.currentSceneText.scene || !this.currentSceneText.active) {
+      console.warn('[GameUIScene] Scene text object is not available, skipping update')
+      return
+    }
+
     const sceneDisplayNames: Record<string, string> = {
       'SkillVillageScene': '🏘️ Skill Village',
       'ProjectForestScene': '🌲 Project Forest',
@@ -123,7 +149,13 @@ export class GameUIScene extends Phaser.Scene {
     }
 
     const displayName = sceneDisplayNames[sceneName] || sceneName
-    this.currentSceneText.setText(displayName)
+    
+    try {
+      this.currentSceneText.setText(displayName)
+      console.log('[GameUIScene] Updated scene display to:', displayName)
+    } catch (error) {
+      console.warn('[GameUIScene] Error updating scene text:', error)
+    }
   }
 
   update(): void {

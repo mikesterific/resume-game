@@ -177,6 +177,7 @@ export class ResumeTowerScene extends Phaser.Scene {
       book.setData('isBook', true)
       
       // Add interactive behavior
+      book.setSize(70, 45)
       book.setInteractive()
       book.on('pointerdown', () => this.viewResumeSection(element.id))
       
@@ -245,6 +246,7 @@ export class ResumeTowerScene extends Phaser.Scene {
       this.add.text(0, -10, '🏘️', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Skill\nVillage', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    villagePortal.setSize(60, 80)
     villagePortal.setInteractive()
     villagePortal.on('pointerdown', () => this.goToScene('SkillVillageScene'))
 
@@ -255,6 +257,7 @@ export class ResumeTowerScene extends Phaser.Scene {
       this.add.text(0, -10, '🌲', { fontSize: '24px' }).setOrigin(0.5),
       this.add.text(0, 15, 'Project\nForest', { fontSize: '10px', align: 'center', color: '#ffffff' }).setOrigin(0.5)
     ])
+    forestPortal.setSize(60, 80)
     forestPortal.setInteractive()
     forestPortal.on('pointerdown', () => this.goToScene('ProjectForestScene'))
   }
