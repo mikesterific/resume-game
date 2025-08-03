@@ -220,7 +220,38 @@
 ## ASSET REQUIREMENTS & CREATIVE PHASES
 
 ### 🎨 Art Assets Needed (Creative Phase)
-**Style**: Professional pixel-art with retro RPG aesthetic
+**Style**: Professional pixel-art with retro sci-fi aesthetic (per style-guide.md: dark space with neon accents, 32-64px resolution, high contrast for accessibility).
+
+#### Skill Galaxy Assets (Detailed List)
+**Overview**: Assets for dynamic solar system mechanics, including user craft, environments, interactive planets (8-10 for skills), and UI feedback. Use sprite sheets for optimization in Phaser.js.
+
+**Category 1: User Craft (Starship)** - 64x64 px base.
+- Ship Base Sprite (Static/Idle): Metallic fuselage with cockpit glow (#2A2A4A base, #00FFFF accents).
+- Thrust Animations (Sprite Sheet, 4-8 frames): Rear engine flares in neon cyan.
+- Scan Beam: Forward-projecting particle effect for landing.
+
+**Category 2: Solar System Environment**
+- Space Background (Tileable 512x512): Starfield with nebula clouds (#0A0A1F base, subtle gradients).
+- Central Sun/Hub: Glowing orb with pulsing flare (#FF4500 accents).
+- Orbit Trails: Dotted neon lines (#00FFFF) for planet paths.
+
+**Category 3: Planet/Skill Nodes (8-10 Instances)** - 32x32 px.
+- Planet Bases (Per Skill): Customized orbs (e.g., crystalline for 'JavaScript') with color-coding.
+- Orbit Animations (Sprite Sheet, 4 frames): Slow spin and glow pulse.
+- Visit Markers: Overlay satellite or checkmark (#00FF00 success color).
+- Landing Feedback: Scan particles on collision (cyan bursts).
+
+**Category 4: UI & Feedback Elements**
+- Skill Icons (Per Planet): 32x32 neon symbols (e.g., code bracket).
+- Modal Background: Holographic frame (#2A2A4A with #00FFFF border).
+- Toggle Icons: Challenge mode switch (metallic on/off buttons).
+- Progress Indicators: Neon lines connecting visited planets.
+
+**Additional/Support Assets**
+- Particles: Star dust, thrust trails (8x8 sprites in sheets).
+- Sounds (Optional): Scan beep, thrust whoosh (toggleable).
+
+**Implementation Notes**: Total ~25 assets; Group into 2 sprite sheets (e.g., ship + particles; planets + icons). Source 70% from itch.io sci-fi packs, custom 30% in Aseprite. Test for performance on HDMI.
 
 #### Character Assets
 - [ ] **Main Character**: 4-direction movement sprites (idle, walk cycles)
