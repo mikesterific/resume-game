@@ -1,0 +1,150 @@
+import Phaser from 'phaser'
+
+/**
+ * Player System - Centralized player functionality for Portfolio Quest
+ * Handles player creation, movement, and rotation across all game scenes
+ */
+
+// Player configuration constants
+const PLAYER_CONFIG = {
+  SIZE: 128,
+  SPEED: 200,
+  DRAG: 500,
+  ROTATION_SPEED: 5, // degrees per frame
+  MIN_SPEED_FOR_ROTATION: 50, // minimum speed to trigger rotation
+} as const
+
+// Player state interface
+interface PlayerState {
+  player: Phaser.GameObjects.Sprite | null
+}
+
+/**
+ * Creates a player sprite with physics and rotation capabilities
+ */
+const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Sprite => {
+  const player = scene.add.sprite(x, y, 'hero-spaceship')
+  player.setDisplaySize(PLAYER_CONFIG.SIZE, PLAYER_CONFIG.SIZE)
+  scene.physics.add.existing(player)
+  
+  const playerBody = player.body as Phaser.Physics.Arcade.Body
+  playerBody.setSize(PLAYER_CONFIG.SIZE, PLAYER_CONFIG.SIZE)
+  playerBody.setCollideWorldBounds(true)
+  playerBody.setDrag(PLAYER_CONFIG.DRAG)
+  
+  // Add rotation state tracking
+  player.setData('targetRotation', 0)
+  player.setData('rotationSpeed', PLAYER_CONFIG.ROTATION_SPEED)
+  
+  return player
+}
+
+/**
+ * Updates player rotation based on velocity with smooth interpolation
+ */
+const updatePlayerRotation = (
+  player: Phaser.GameObjects.Sprite,
+  velocity: { x: number, y: number }
+): void => {
+  const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+  
+  if (speed > PLAYER_CONFIG.MIN_SPEED_FOR_ROTATION) {
+    // Calculate target rotation from velocity
+    // Add +π/2 offset because sprite faces up by default, but 0° in Phaser points right
+    const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) + Math.PI / 2
+    player.setData('targetRotation', targetRotation)
+  }
+  
+  // Smooth interpolation to target rotation
+  const currentRotation = player.rotation
+  const targetRotation = player.getData('targetRotation')
+  const rotationSpeed = player.getData('rotationSpeed')
+  
+  const rotationDiff = Phaser.Math.Angle.ShortestBetween(
+    Phaser.Math.RadToDeg(currentRotation),
+    Phaser.Math.RadToDeg(targetRotation)
+  )
+  
+  if (Math.abs(rotationDiff) > 1) {
+    const rotationStep = Math.sign(rotationDiff) * rotationSpeed * (Math.PI / 180)
+    player.rotation += rotationStep
+  }
+}
+
+/**
+ * Updates player velocity based on input with rotation
+ */
+const updatePlayerVelocity = (
+  player: Phaser.GameObjects.Sprite,
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys,
+  keyboard: Phaser.Input.Keyboard.KeyboardPlugin,
+  speed: number = PLAYER_CONFIG.SPEED
+): void => {
+  const playerBody = player.body as Phaser.Physics.Arcade.Body
+  playerBody.setVelocity(0)
+
+  const isLeftPressed = cursors.left.isDown || keyboard.addKey('A').isDown
+  const isRightPressed = cursors.right.isDown || keyboard.addKey('D').isDown
+  const isUpPressed = cursors.up.isDown || keyboard.addKey('W').isDown
+  const isDownPressed = cursors.down.isDown || keyboard.addKey('S').isDown
+
+  if (isLeftPressed) playerBody.setVelocityX(-speed)
+  else if (isRightPressed) playerBody.setVelocityX(speed)
+
+  if (isUpPressed) playerBody.setVelocityY(-speed)
+  else if (isDownPressed) playerBody.setVelocityY(speed)
+
+  // Update rotation based on velocity
+  updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
+}
+
+/**
+ * Preloads player assets - call this in scene preload methods
+ */
+const preloadPlayerAssets = (scene: Phaser.Scene): void => {
+  console.log(`[${scene.scene.key}] Preloading player assets`)
+  scene.load.image('hero-spaceship', 'src/assets/images/HeroSpaceShip.png')
+}
+
+/**
+ * Utility function to find nearest object to player (for interactions)
+ */
+const findNearestObject = <T extends Phaser.GameObjects.GameObject>(
+  player: { x: number; y: number },
+  objects: T[],
+  maxDistance: number
+): T | null => {
+  const calculateDistance = (obj1: { x: number; y: number }, obj2: { x: number; y: number }): number =>
+    Phaser.Math.Distance.Between(obj1.x, obj1.y, obj2.x, obj2.y)
+
+  return objects.reduce((nearest: { object: T | null; distance: number }, obj) => {
+    const sprite = obj as unknown as { x: number; y: number }
+    const distance = calculateDistance(player, sprite)
+    
+    if (distance < maxDistance && distance < nearest.distance) {
+      return { object: obj, distance }
+    }
+    return nearest
+  }, { object: null, distance: Infinity }).object
+}
+
+// Export all player system functionality as a default object
+export default {
+  PLAYER_CONFIG,
+  createPlayer,
+  updatePlayerVelocity,
+  updatePlayerRotation,
+  preloadPlayerAssets,
+  findNearestObject
+}
+
+// Also provide named exports for convenience
+export {
+  PLAYER_CONFIG,
+  createPlayer,
+  updatePlayerVelocity,
+  updatePlayerRotation,
+  preloadPlayerAssets,
+  findNearestObject,
+  type PlayerState
+}

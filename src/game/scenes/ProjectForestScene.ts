@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
+import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
 
 // Types for scene state
 interface SceneState {
@@ -109,95 +110,7 @@ const generateRandomTrees = (width: number, height: number, count: number = 15):
   return treePositions
 }
 
-const calculateDistance = (obj1: { x: number; y: number }, obj2: { x: number; y: number }): number =>
-  Phaser.Math.Distance.Between(obj1.x, obj1.y, obj2.x, obj2.y)
-
-const findNearestObject = <T extends Phaser.GameObjects.GameObject>(
-  player: { x: number; y: number },
-  objects: T[],
-  maxDistance: number
-): T | null => {
-  return objects.reduce((nearest: { object: T | null; distance: number }, obj) => {
-    const sprite = obj as unknown as { x: number; y: number }
-    const distance = calculateDistance(player, sprite)
-    
-    if (distance < maxDistance && distance < nearest.distance) {
-      return { object: obj, distance }
-    }
-    return nearest
-  }, { object: null, distance: Infinity }).object
-}
-
-const updatePlayerRotation = (
-  player: Phaser.GameObjects.Sprite,
-  velocity: { x: number, y: number }
-): void => {
-  const minSpeed = 50 // Only rotate when moving significantly
-  const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
-  
-  if (speed > minSpeed) {
-    // Calculate target rotation from velocity
-    // Add +π/2 offset because sprite faces up by default, but 0° in Phaser points right
-    const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) + Math.PI / 2
-    player.setData('targetRotation', targetRotation)
-  }
-  
-  // Smooth interpolation to target rotation
-  const currentRotation = player.rotation
-  const targetRotation = player.getData('targetRotation')
-  const rotationSpeed = player.getData('rotationSpeed')
-  
-  const rotationDiff = Phaser.Math.Angle.ShortestBetween(
-    Phaser.Math.RadToDeg(currentRotation),
-    Phaser.Math.RadToDeg(targetRotation)
-  )
-  
-  if (Math.abs(rotationDiff) > 1) {
-    const rotationStep = Math.sign(rotationDiff) * rotationSpeed * (Math.PI / 180)
-    player.rotation += rotationStep
-  }
-}
-
-const updatePlayerVelocity = (
-  player: Phaser.GameObjects.Sprite,
-  cursors: Phaser.Types.Input.Keyboard.CursorKeys,
-  keyboard: Phaser.Input.Keyboard.KeyboardPlugin,
-  speed: number = 200
-): void => {
-  const playerBody = player.body as Phaser.Physics.Arcade.Body
-  playerBody.setVelocity(0)
-
-  const isLeftPressed = cursors.left.isDown || keyboard.addKey('A').isDown
-  const isRightPressed = cursors.right.isDown || keyboard.addKey('D').isDown
-  const isUpPressed = cursors.up.isDown || keyboard.addKey('W').isDown
-  const isDownPressed = cursors.down.isDown || keyboard.addKey('S').isDown
-
-  if (isLeftPressed) playerBody.setVelocityX(-speed)
-  else if (isRightPressed) playerBody.setVelocityX(speed)
-
-  if (isUpPressed) playerBody.setVelocityY(-speed)
-  else if (isDownPressed) playerBody.setVelocityY(speed)
-
-  // Add rotation update
-  updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
-}
-
 // Factory functions for creating game objects
-const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Sprite => {
-  const player = scene.add.sprite(x, y, 'hero-spaceship')
-  player.setDisplaySize(32, 32) // Maintain current collision size
-  scene.physics.add.existing(player)
-  
-  const playerBody = player.body as Phaser.Physics.Arcade.Body
-  playerBody.setCollideWorldBounds(true)
-  playerBody.setDrag(500)
-  
-  // Add rotation state tracking
-  player.setData('targetRotation', 0)
-  player.setData('rotationSpeed', 5) // degrees per frame
-  
-  return player
-}
 
 const createProjectChest = (
   scene: Phaser.Scene, 
@@ -310,9 +223,7 @@ export class ProjectForestScene extends Phaser.Scene {
   }
 
   preload(): void {
-    console.log('[ProjectForestScene] Preloading assets')
-    // Load hero spaceship sprite
-    this.load.image('hero-spaceship', 'src/assets/images/HeroSpaceShip.png')
+    preloadPlayerAssets(this)
   }
 
   create(): void {

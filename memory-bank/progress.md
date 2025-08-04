@@ -115,3 +115,29 @@ const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) +
 - Down Arrow (↓): Ship points down ✅
 - Left Arrow (←): Ship points left ✅
 - Up Arrow (↑): Ship points up ✅
+
+#### Size Enhancement (2025-01-03)
+**Update**: Increased spaceship size from 32x32 to 128x128 pixels (via centralized config)
+**Benefits**: 
+- Enhanced visibility and prominence
+- Better showcase of sprite details
+- More impressive rotation effects
+- Updated collision bounds to match visual size
+
+#### Code Architecture Refactor (2025-01-03)
+**Major Improvement**: Abstracted player functionality into centralized PlayerSystem
+**New File**: `src/game/systems/PlayerSystem.ts`
+**Benefits**:
+- **Eliminated Code Duplication**: Removed identical player logic from all three scenes
+- **Single Source of Truth**: All player behavior centralized in one module
+- **Configuration Management**: Easy tweaking via `PLAYER_CONFIG` constants
+- **Type Safety**: Shared `PlayerState` interface for consistency
+- **Maintainability**: Bug fixes and enhancements only need to be made once
+- **Guaranteed Consistency**: Identical player behavior across all scenes
+
+**Functions Centralized**:
+- `createPlayer()` - Player sprite creation with physics
+- `updatePlayerVelocity()` - Movement and rotation handling
+- `updatePlayerRotation()` - Smooth rotation interpolation
+- `preloadPlayerAssets()` - Asset loading
+- `findNearestObject()` - Interaction detection utility
