@@ -3,7 +3,7 @@ import gameEventBridge from '../GameEventBridge'
 
 // Types for scene state
 interface SceneState {
-  player: Phaser.GameObjects.Rectangle | null
+  player: Phaser.GameObjects.Sprite | null
   projectChests: Phaser.GameObjects.Group | null
   cursors: Phaser.Types.Input.Keyboard.CursorKeys | null
   interactionPrompt: Phaser.GameObjects.Text | null
@@ -128,12 +128,43 @@ const findNearestObject = <T extends Phaser.GameObjects.GameObject>(
   }, { object: null, distance: Infinity }).object
 }
 
+const updatePlayerRotation = (
+  player: Phaser.GameObjects.Sprite,
+  velocity: { x: number, y: number }
+): void => {
+  const minSpeed = 50 // Only rotate when moving significantly
+  const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+  
+  if (speed > minSpeed) {
+    // Calculate target rotation from velocity
+    // Add +π/2 offset because sprite faces up by default, but 0° in Phaser points right
+    const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) + Math.PI / 2
+    player.setData('targetRotation', targetRotation)
+  }
+  
+  // Smooth interpolation to target rotation
+  const currentRotation = player.rotation
+  const targetRotation = player.getData('targetRotation')
+  const rotationSpeed = player.getData('rotationSpeed')
+  
+  const rotationDiff = Phaser.Math.Angle.ShortestBetween(
+    Phaser.Math.RadToDeg(currentRotation),
+    Phaser.Math.RadToDeg(targetRotation)
+  )
+  
+  if (Math.abs(rotationDiff) > 1) {
+    const rotationStep = Math.sign(rotationDiff) * rotationSpeed * (Math.PI / 180)
+    player.rotation += rotationStep
+  }
+}
+
 const updatePlayerVelocity = (
-  playerBody: Phaser.Physics.Arcade.Body,
+  player: Phaser.GameObjects.Sprite,
   cursors: Phaser.Types.Input.Keyboard.CursorKeys,
   keyboard: Phaser.Input.Keyboard.KeyboardPlugin,
   speed: number = 200
 ): void => {
+  const playerBody = player.body as Phaser.Physics.Arcade.Body
   playerBody.setVelocity(0)
 
   const isLeftPressed = cursors.left.isDown || keyboard.addKey('A').isDown
@@ -146,16 +177,24 @@ const updatePlayerVelocity = (
 
   if (isUpPressed) playerBody.setVelocityY(-speed)
   else if (isDownPressed) playerBody.setVelocityY(speed)
+
+  // Add rotation update
+  updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
 }
 
 // Factory functions for creating game objects
-const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Rectangle => {
-  const player = scene.add.rectangle(x, y, 32, 32, 0xe74c3c)
+const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Sprite => {
+  const player = scene.add.sprite(x, y, 'hero-spaceship')
+  player.setDisplaySize(32, 32) // Maintain current collision size
   scene.physics.add.existing(player)
   
   const playerBody = player.body as Phaser.Physics.Arcade.Body
   playerBody.setCollideWorldBounds(true)
   playerBody.setDrag(500)
+  
+  // Add rotation state tracking
+  player.setData('targetRotation', 0)
+  player.setData('rotationSpeed', 5) // degrees per frame
   
   return player
 }
@@ -270,6 +309,12 @@ export class ProjectForestScene extends Phaser.Scene {
     super({ key: 'ProjectForestScene' })
   }
 
+  preload(): void {
+    console.log('[ProjectForestScene] Preloading assets')
+    // Load hero spaceship sprite
+    this.load.image('hero-spaceship', 'src/assets/images/HeroSpaceShip.png')
+  }
+
   create(): void {
     console.log('[ProjectForestScene] Creating Project Forest')
     
@@ -371,8 +416,7 @@ export class ProjectForestScene extends Phaser.Scene {
     if (!this.state.player || !this.state.cursors) return
 
     // Handle player movement using functional approach
-    const playerBody = this.state.player.body as Phaser.Physics.Arcade.Body
-    updatePlayerVelocity(playerBody, this.state.cursors, this.input.keyboard!)
+    updatePlayerVelocity(this.state.player, this.state.cursors, this.input.keyboard!)
 
     // Check for chest proximity
     this.updateChestProximity()

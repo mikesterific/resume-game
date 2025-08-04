@@ -33,6 +33,8 @@ Portfolio Quest/
 - **Observer Pattern**: User interactions triggering UI updates
 - **Factory Pattern**: Dynamic creation of interactive game objects
 - **Command Pattern**: User input handling and game actions
+- **Functional Factory Pattern**: Pure creation functions for game entities
+- **Shared Utility Pattern**: Reusable functions across multiple scenes
 
 ### Web Design Patterns
 - **Composition API**: Vue 3's modern approach for component logic
@@ -53,6 +55,30 @@ Portfolio Quest/
 - **Component-Based UI**: Reusable Vue 3 components with Composition API
 - **Event-Driven Communication**: Clean separation between game and UI layers
 - **Configuration-Driven**: JSON files for game world and portfolio data
+- **Functional Scene Architecture**: Pure functions and factory patterns within Phaser classes
+
+### Functional Programming Patterns (NEW)
+- **Pure Functions**: Data generation and calculations without side effects
+- **Factory Functions**: Reusable object creation for game entities
+- **State Management**: Centralized state interfaces for scene management
+- **Shared Utilities**: Common functions across scenes (distance, movement, proximity)
+- **Immutable Data Structures**: Read-only configuration and game data
+- **Functional Composition**: Building complex behaviors from simple functions
+
+#### Implemented Functional Utilities
+```typescript
+// Shared across all scenes
+calculateDistance(obj1, obj2) → number
+findNearestObject(player, objects, maxDistance) → GameObject | null
+updatePlayerVelocity(playerBody, cursors, keyboard, speed) → void
+createPlayer(scene, x, y) → Phaser.GameObjects.Rectangle
+
+// Scene-specific factories
+createSkillNPC(scene, skill, onInteract) → Container
+createResumeBook(scene, element, onInteract) → Container  
+createProjectChest(scene, project, onInteract) → Container
+createPortal(scene, portalData, onActivate) → Container
+```
 
 ## Technology Stack
 
