@@ -141,3 +141,16 @@ const targetRotation = Phaser.Math.Angle.Between(0, 0, velocity.x, velocity.y) +
 - `updatePlayerRotation()` - Smooth rotation interpolation
 - `preloadPlayerAssets()` - Asset loading
 - `findNearestObject()` - Interaction detection utility
+- `updatePlayerEngineState()` - Interactive engine on/off switching
+
+#### Interactive Engine States (2025-01-03)
+**Major Enhancement**: Added dynamic engine state switching for visual feedback
+**New Assets**: 
+- `HeroSpaceShipOff.png` - Engines off (idle state)
+- `HeroSpaceShipOn.png` - Engines on (moving state)
+**Features**:
+- **Responsive Visual Feedback**: Engines turn on instantly when keys pressed
+- **Smart State Management**: Only switches textures when state changes (performance optimized)  
+- **Real-time Interaction**: Engines off when idle, on when moving
+- **Seamless Integration**: Works with existing rotation and movement systems
+**User Experience**: Ship feels alive and responsive to input with immediate visual feedback

@@ -23,7 +23,10 @@ interface PlayerState {
  * Creates a player sprite with physics and rotation capabilities
  */
 const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Sprite => {
-  const player = scene.add.sprite(x, y, 'hero-spaceship')
+  // Start with engines off (idle state)
+  console.log(`[${scene.scene.key}] Creating player with texture: hero-spaceship-off`)
+  const player = scene.add.sprite(x, y, 'hero-spaceship-off')
+  console.log(`[${scene.scene.key}] Player created with texture: ${player.texture.key}`)
   player.setDisplaySize(PLAYER_CONFIG.SIZE, PLAYER_CONFIG.SIZE)
   scene.physics.add.existing(player)
   
@@ -36,7 +39,34 @@ const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObj
   player.setData('targetRotation', 0)
   player.setData('rotationSpeed', PLAYER_CONFIG.ROTATION_SPEED)
   
+  // Add engine state tracking
+  player.setData('enginesOn', false)
+  
   return player
+}
+
+/**
+ * Updates player engine state based on input (engines on when moving, off when idle)
+ */
+const updatePlayerEngineState = (
+  player: Phaser.GameObjects.Sprite,
+  isMoving: boolean
+): void => {
+  const currentEnginesOn = player.getData('enginesOn')
+  
+  // Debug logging
+  console.log(`[PlayerSystem] Engine state - isMoving: ${isMoving}, currentEnginesOn: ${currentEnginesOn}`)
+  
+  // Only change texture if state actually changed to avoid unnecessary operations
+  if (isMoving && !currentEnginesOn) {
+    console.log('[PlayerSystem] Turning engines ON')
+    player.setTexture('hero-spaceship-on')
+    player.setData('enginesOn', true)
+  } else if (!isMoving && currentEnginesOn) {
+    console.log('[PlayerSystem] Turning engines OFF')
+    player.setTexture('hero-spaceship-off')
+    player.setData('enginesOn', false)
+  }
 }
 
 /**
@@ -72,7 +102,7 @@ const updatePlayerRotation = (
 }
 
 /**
- * Updates player velocity based on input with rotation
+ * Updates player velocity based on input with rotation and engine state
  */
 const updatePlayerVelocity = (
   player: Phaser.GameObjects.Sprite,
@@ -88,11 +118,17 @@ const updatePlayerVelocity = (
   const isUpPressed = cursors.up.isDown || keyboard.addKey('W').isDown
   const isDownPressed = cursors.down.isDown || keyboard.addKey('S').isDown
 
+  // Check if any movement key is pressed
+  const isMoving = isLeftPressed || isRightPressed || isUpPressed || isDownPressed
+
   if (isLeftPressed) playerBody.setVelocityX(-speed)
   else if (isRightPressed) playerBody.setVelocityX(speed)
 
   if (isUpPressed) playerBody.setVelocityY(-speed)
   else if (isDownPressed) playerBody.setVelocityY(speed)
+
+  // Update engine state based on input
+  updatePlayerEngineState(player, isMoving)
 
   // Update rotation based on velocity
   updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
@@ -103,7 +139,10 @@ const updatePlayerVelocity = (
  */
 const preloadPlayerAssets = (scene: Phaser.Scene): void => {
   console.log(`[${scene.scene.key}] Preloading player assets`)
-  scene.load.image('hero-spaceship', 'src/assets/images/HeroSpaceShip.png')
+  console.log(`[${scene.scene.key}] Loading hero-spaceship-off from: src/assets/images/HeroSpaceShipOff.png`)
+  console.log(`[${scene.scene.key}] Loading hero-spaceship-on from: src/assets/images/HeroSpaceShipOn.png`)
+  scene.load.image('hero-spaceship-off', 'src/assets/images/HeroSpaceShipOff.png')
+  scene.load.image('hero-spaceship-on', 'src/assets/images/HeroSpaceShipOn.png')
 }
 
 /**
@@ -134,6 +173,7 @@ export default {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
+  updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject
 }
@@ -144,6 +184,7 @@ export {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
+  updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject,
   type PlayerState
