@@ -20,6 +20,7 @@ interface SkillData {
   x: number
   y: number
   category: string
+  description?: string
 }
 
 interface PortalData {
@@ -30,11 +31,78 @@ interface PortalData {
 
 // Pure functions for scene logic
 const createSkillsData = (): SkillData[] => [
-  { id: 'frontend', name: 'Frontend Dev', emoji: '💻', x: 300, y: 300, category: 'frontend' },
-  { id: 'backend', name: 'Backend Dev', emoji: '⚙️', x: 600, y: 300, category: 'backend' },
-  { id: 'mobile', name: 'Mobile Dev', emoji: '📱', x: 900, y: 300, category: 'mobile' },
-  { id: 'devops', name: 'DevOps', emoji: '🚀', x: 450, y: 500, category: 'devops' },
-  { id: 'design', name: 'UI/UX Design', emoji: '🎨', x: 750, y: 500, category: 'design' }
+  { 
+    id: 'frontend', 
+    name: 'Front-End Expert\n(20+ Years)', 
+    emoji: '👨‍💻', 
+    x: 280, 
+    y: 300, 
+    category: 'frontend',
+    description: 'Deep mastery of Vue.js, React, Angular. CSS3, HTML5, TailwindCSS wizard. Performance optimization expert.'
+  },
+  { 
+    id: 'testing', 
+    name: 'Testing Aficionado', 
+    emoji: '🧪', 
+    x: 520, 
+    y: 300, 
+    category: 'testing',
+    description: 'Cypress ninja, Jest, Mocha, Chai master. Writes resilient full-coverage tests.'
+  },
+  { 
+    id: 'architecture', 
+    name: 'State Management\n& Architecture', 
+    emoji: '📦', 
+    x: 760, 
+    y: 300, 
+    category: 'architecture',
+    description: 'Vuex wizard, Supabase integration. Large-scale app architecture at EA, Dell, RentPath.'
+  },
+  { 
+    id: 'tooling', 
+    name: 'Tooling & Build\nSystems', 
+    emoji: '⚙️', 
+    x: 320, 
+    y: 480, 
+    category: 'tooling',
+    description: 'Vite, Webpack, TypeScript expert. Custom component libraries and mono repos.'
+  },
+  { 
+    id: 'ai', 
+    name: 'AI & RAG\nEngineering', 
+    emoji: '🧠', 
+    x: 560, 
+    y: 480, 
+    category: 'ai',
+    description: 'Custom RAG systems with similarity search. LLM integration in production workflows.'
+  },
+  { 
+    id: 'devops', 
+    name: 'DevOps &\nNetworking', 
+    emoji: '📡', 
+    x: 800, 
+    y: 480, 
+    category: 'devops',
+    description: 'Git mastery, CIDR, VLANs, merge automation. Network knowledge from dev perspective.'
+  },
+  { 
+    id: 'security', 
+    name: 'Security &\nAccessibility', 
+    emoji: '🔒', 
+    x: 400, 
+    y: 620, 
+    category: 'security',
+    description: 'Linux Foundation certified (LFD121). Security and accessibility by design, not bolted on.'
+  },
+  { 
+    id: 'leadership', 
+    name: 'Thought Leader\n& Author', 
+    emoji: '🎤', 
+    x: 640, 
+    y: 620, 
+    category: 'leadership',
+    description: 'Google Tech Talk speaker. Published "Pro HTML5 Performance" by Apress. UI badass.'
+  }
 ]
 
 const createPortalsData = (width: number, height: number): Array<PortalData & { x: number; y: number; color: number; emoji: string }> => [

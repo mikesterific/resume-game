@@ -17,6 +17,11 @@
             </span>
           </div>
           
+          <div v-if="skill?.description" class="skill-description">
+            <h3>About This Expertise</h3>
+            <p>{{ skill.description }}</p>
+          </div>
+
           <div class="skill-level">
             <h3>Proficiency Level</h3>
             <div class="level-indicator">
@@ -87,11 +92,14 @@ function formatCategory(category: string | undefined): string {
   if (!category) return ''
   
   const categoryMap: Record<string, string> = {
-    'frontend': 'Frontend Development',
-    'backend': 'Backend Development',
-    'mobile': 'Mobile Development',
-    'devops': 'DevOps & Cloud',
-    'design': 'UI/UX Design'
+    'frontend': 'Front-End Development',
+    'testing': 'Testing & Quality Assurance',
+    'architecture': 'Architecture & State Management',
+    'tooling': 'Build Tools & Development',
+    'ai': 'AI & Machine Learning',
+    'devops': 'DevOps & Networking',
+    'security': 'Security & Accessibility',
+    'leadership': 'Thought Leadership'
   }
   
   return categoryMap[category] || category
@@ -115,11 +123,14 @@ function getTechnologiesForSkill(skillId: string | undefined): string[] {
   if (!skillId) return []
   
   const techMap: Record<string, string[]> = {
-    'frontend': ['Vue.js', 'React', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'SCSS', 'Tailwind CSS'],
-    'backend': ['Node.js', 'Express.js', 'Python', 'Django', 'FastAPI', 'PostgreSQL', 'MongoDB', 'Redis'],
-    'mobile': ['React Native', 'Flutter', 'Swift', 'Kotlin', 'Expo', 'Firebase'],
-    'devops': ['Docker', 'AWS', 'Azure', 'CI/CD', 'Kubernetes', 'Terraform', 'Jenkins'],
-    'design': ['Figma', 'Adobe XD', 'Sketch', 'Photoshop', 'Design Systems', 'User Research']
+    'frontend': ['Vue.js', 'Vue 3', 'React.js', 'Angular', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3', 'SCSS', 'TailwindCSS'],
+    'testing': ['Cypress', 'Jest', 'Mocha', 'Chai', 'Vitest', 'Testing Library', 'E2E Testing', 'Unit Testing'],
+    'architecture': ['Vuex', 'Redux', 'Supabase', 'Socket.IO', 'API Integration', 'Component Libraries', 'Scalable Architecture'],
+    'tooling': ['Vite', 'Webpack', 'npm', 'yarn', 'Babel', 'ESLint', 'TypeScript', 'Mono Repos'],
+    'ai': ['RAG Systems', 'LLM Integration', 'Similarity Search', 'OpenAI API', 'AI Workflows', 'Machine Learning'],
+    'devops': ['Git', 'GitHub Actions', 'CIDR', 'VLANs', 'Networking', 'Version Control', 'Merge Automation'],
+    'security': ['Linux Foundation LFD121', 'Secure Development', 'Accessibility', 'WCAG', 'Security by Design'],
+    'leadership': ['Technical Writing', 'Public Speaking', 'Google Tech Talks', 'Book Authoring', 'Mentoring']
   }
   
   return techMap[skillId] || []
@@ -128,13 +139,16 @@ function getTechnologiesForSkill(skillId: string | undefined): string[] {
 function getRelatedProjects(category: string | undefined): ProjectData[] {
   if (!category) return []
   
-  // Simple mapping - in a real app, you might have more sophisticated filtering
+  // Map skills to relevant projects
   const categoryProjectMap: Record<string, string[]> = {
-    'frontend': ['portfolio-quest', 'data-viz', 'ecommerce-app'],
-    'backend': ['ecommerce-app', 'data-viz'],
-    'mobile': ['mobile-fitness'],
-    'devops': ['ecommerce-app', 'data-viz'],
-    'design': ['portfolio-quest', 'mobile-fitness']
+    'frontend': ['portfolio-quest', 'data-viz', 'ecommerce-app', 'component-library'],
+    'testing': ['portfolio-quest', 'component-library', 'ecommerce-app'],
+    'architecture': ['ecommerce-app', 'data-viz', 'portfolio-quest'],
+    'tooling': ['component-library', 'portfolio-quest', 'data-viz'],
+    'ai': ['data-viz'], // Could add AI-related projects here
+    'devops': ['ecommerce-app', 'data-viz', 'portfolio-quest'],
+    'security': ['ecommerce-app', 'portfolio-quest'],
+    'leadership': ['portfolio-quest'] // Showcase projects demonstrating leadership
   }
   
   const projectIds = categoryProjectMap[category] || []
@@ -244,10 +258,30 @@ function openProject(projectId: string): void {
 }
 
 .category-frontend { background: #e3f2fd; color: #1976d2; }
-.category-backend { background: #f3e5f5; color: #7b1fa2; }
-.category-mobile { background: #fff3e0; color: #f57c00; }
-.category-devops { background: #e8f5e8; color: #388e3c; }
-.category-design { background: #fce4ec; color: #c2185b; }
+.category-testing { background: #f3e5f5; color: #7b1fa2; }
+.category-architecture { background: #fff3e0; color: #f57c00; }
+.category-tooling { background: #e8f5e8; color: #388e3c; }
+.category-ai { background: #fce4ec; color: #c2185b; }
+.category-devops { background: #e1f5fe; color: #0277bd; }
+.category-security { background: #fff8e1; color: #f57f17; }
+.category-leadership { background: #f1f8e9; color: #558b2f; }
+
+.skill-description {
+  margin-bottom: 24px;
+}
+
+.skill-description h3 {
+  margin: 0 0 12px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.skill-description p {
+  margin: 0;
+  color: #555;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
 
 .skill-level {
   margin-bottom: 24px;

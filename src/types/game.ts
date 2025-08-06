@@ -13,9 +13,10 @@ export interface ProjectData {
 export interface SkillData {
   id: string
   name: string
-  category: 'frontend' | 'backend' | 'mobile' | 'devops' | 'design'
+  category: 'frontend' | 'testing' | 'architecture' | 'tooling' | 'ai' | 'devops' | 'security' | 'leadership'
   level: 1 | 2 | 3 | 4 | 5
   icon?: string
+  description?: string
 }
 
 export interface ResumeData {

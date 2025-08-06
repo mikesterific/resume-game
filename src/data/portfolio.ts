@@ -53,38 +53,67 @@ export const portfolioData = {
   skills: [
     {
       id: 'frontend',
-      name: 'Frontend Development',
+      name: 'Front-End Expert (20+ Years)',
       category: 'frontend' as const,
       level: 5,
-      icon: '💻'
+      icon: '👨‍💻',
+      description: 'Deep mastery of Vue.js (including Vue 3, Options API, and Composition API), React.js, and Angular. Fluent in CSS3, HTML5, SASS/LESS, and TailwindCSS. Performance optimization expert - wrote Pro HTML5 Performance book and drove 30% performance boost at Dell.'
     },
     {
-      id: 'backend',
-      name: 'Backend Development', 
-      category: 'backend' as const,
-      level: 4,
-      icon: '⚙️'
+      id: 'testing',
+      name: 'Testing Aficionado', 
+      category: 'testing' as const,
+      level: 5,
+      icon: '🧪',
+      description: 'Cypress ninja with expertise in config, isolation, retries, and CI stability. Jest, Mocha, Chai master. Writes full-coverage tests that are resilient, not just green.'
     },
     {
-      id: 'mobile',
-      name: 'Mobile Development',
-      category: 'mobile' as const,
+      id: 'architecture',
+      name: 'State Management & Architecture',
+      category: 'architecture' as const,
+      level: 5,
+      icon: '📦',
+      description: 'Vuex wizard with pattern-oriented store design. Integrates Supabase, Socket.IO, and external APIs with store architecture. Designed large-scale apps at EA, Dell, RentPath, and Scale Computing.'
+    },
+    {
+      id: 'tooling',
+      name: 'Tooling & Build Systems',
+      category: 'tooling' as const,
+      level: 5,
+      icon: '⚙️',
+      description: 'Fluent with Vite, Webpack, npm, yarn, Babel, ESLint, and TypeScript. Expert in managing mono repos and custom component libraries.'
+    },
+    {
+      id: 'ai',
+      name: 'AI & RAG Engineering',
+      category: 'ai' as const,
       level: 4,
-      icon: '📱'
+      icon: '🧠',
+      description: 'Developed custom RAG systems with similarity search and best-practices enrichment. Uses LLMs to generate, iterate, and refine test cases and documentation. AI-integration into dev workflow is deployed, not theoretical.'
     },
     {
       id: 'devops',
-      name: 'DevOps & Cloud',
+      name: 'DevOps & Networking',
       category: 'devops' as const,
-      level: 3,
-      icon: '🚀'
+      level: 4,
+      icon: '📡',
+      description: 'Knows networking from a dev perspective (CIDR, HomeKit security, Asus routers, VLANs). Fluent in Git, branching strategies, merge automation, and version hygiene.'
     },
     {
-      id: 'design',
-      name: 'UI/UX Design',
-      category: 'design' as const,
-      level: 3,
-      icon: '🎨'
+      id: 'security',
+      name: 'Security & Accessibility',
+      category: 'security' as const,
+      level: 4,
+      icon: '🔒',
+      description: 'Linux Foundation certified in Secure Software Development (LFD121). Brings accessibility and security into early-stage design—not bolted on after.'
+    },
+    {
+      id: 'leadership',
+      name: 'Thought Leader & Author',
+      category: 'leadership' as const,
+      level: 5,
+      icon: '🎤',
+      description: 'Gave a Google Tech Talk on animating pseudo-elements. Published author of "Pro HTML5 Performance" by Apress. UI badass (tattoo verified).'
     }
   ] as SkillData[],
 
