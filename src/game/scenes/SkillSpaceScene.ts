@@ -13,6 +13,9 @@ interface SceneState {
   interactionPrompt: Phaser.GameObjects.Text | null
   nearestStation: Phaser.GameObjects.GameObject | null
   nearestPortal: Phaser.GameObjects.GameObject | null
+  isDocking: boolean
+  isDocked: boolean
+  dockedStation: Phaser.GameObjects.GameObject | null
 }
 
 interface SpaceStationData {
@@ -383,7 +386,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     cursors: null,
     interactionPrompt: null,
     nearestStation: null,
-    nearestPortal: null
+    nearestPortal: null,
+    isDocking: false,
+    isDocked: false,
+    dockedStation: null
   }
 
   constructor() {
@@ -469,19 +475,67 @@ export class SkillSpaceScene extends Phaser.Scene {
   }
 
   // Handler methods for interactions
-  private handleStationInteraction = (skillId: string): void => {
-    // Add station docking animation
-    if (this.state.nearestStation) {
-      this.tweens.add({
-        targets: this.state.nearestStation,
-        scaleX: 1.1,
-        scaleY: 1.1,
-        duration: 200,
-        yoyo: true,
-        ease: 'Power2'
-      })
+  private dockWithStation = (station: Phaser.GameObjects.GameObject, skillId: string): void => {
+    if (!this.state.player || this.state.isDocking) return
+    
+    this.state.isDocking = true
+    
+    // Get station position
+    const stationX = (station as any).x
+    const stationY = (station as any).y
+    
+    // Update interaction prompt
+    if (this.state.interactionPrompt) {
+      this.state.interactionPrompt.setText('Docking...')
     }
     
+    // Animate ship to station center
+    this.tweens.add({
+      targets: this.state.player,
+      x: stationX,
+      y: stationY,
+      duration: 800,
+      ease: 'Power2.easeInOut',
+      onComplete: () => {
+        // Station docking animation
+        this.tweens.add({
+          targets: station,
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 200,
+          yoyo: true,
+          ease: 'Power2',
+          onComplete: () => {
+            // Complete docking sequence
+            this.state.isDocking = false
+            this.state.isDocked = true
+            this.state.dockedStation = station
+            
+            if (this.state.interactionPrompt) {
+              this.state.interactionPrompt.setText('Docked! Press SPACE to undock')
+              this.state.interactionPrompt.setVisible(true)
+            }
+            
+            // Emit skill selected event
+            gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
+          }
+        })
+      }
+    })
+  }
+
+  private undockFromStation = (): void => {
+    if (!this.state.player || !this.state.isDocked) return
+    
+    this.state.isDocked = false
+    this.state.dockedStation = null
+    
+    if (this.state.interactionPrompt) {
+      this.state.interactionPrompt.setVisible(false)
+    }
+  }
+
+  private handleStationInteraction = (skillId: string): void => {
     gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
   }
 
@@ -495,6 +549,14 @@ export class SkillSpaceScene extends Phaser.Scene {
     
     // Space for interaction
     this.input.keyboard!.on('keydown-SPACE', () => {
+      if (this.state.isDocking) return // Prevent multiple docking attempts
+      
+      // If already docked, undock
+      if (this.state.isDocked) {
+        this.undockFromStation()
+        return
+      }
+      
       if (this.state.nearestPortal) {
         const portalData = this.state.nearestPortal.getData('portalData')
         if (portalData) {
@@ -503,7 +565,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       } else if (this.state.nearestStation) {
         const stationData = this.state.nearestStation.getData('stationData')
         if (stationData) {
-          this.handleStationInteraction(stationData.skillId)
+          this.dockWithStation(this.state.nearestStation, stationData.skillId)
         }
       }
     })
@@ -538,14 +600,17 @@ export class SkillSpaceScene extends Phaser.Scene {
   update(): void {
     if (!this.state.player || !this.state.cursors) return
 
-    // Handle player movement using functional approach
-    updatePlayerVelocity(this.state.player, this.state.cursors, this.input.keyboard!)
+    // Only allow movement if not docking or docked
+    if (!this.state.isDocking && !this.state.isDocked) {
+      // Handle player movement using functional approach
+      updatePlayerVelocity(this.state.player, this.state.cursors, this.input.keyboard!)
 
-    // Check for portal proximity
-    this.updatePortalProximity()
+      // Check for portal proximity
+      this.updatePortalProximity()
 
-    // Check for station proximity
-    this.updateStationProximity()
+      // Check for station proximity
+      this.updateStationProximity()
+    }
   }
 
   private updatePortalProximity(): void {
