@@ -245,17 +245,15 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   
   // Station identifier removed - starbase images are detailed enough
   
-  // Station label with space theme - enhanced antialiasing
-  const stationLabel = scene.add.text(0, 50, station.name, { 
+  // Station label positioned below starbase - clean, no background
+  const stationLabel = scene.add.text(0, 95, station.name, { 
     fontSize: '18px', 
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
     fontStyle: 'bold',
     color: '#FFFFFF',
     align: 'center',
     stroke: '#000000',
-    strokeThickness: 3,
-    backgroundColor: '#2C3E50dd',
-    padding: { x: 8, y: 4 }
+    strokeThickness: 3
   }).setOrigin(0.5)
 
   // Status indicator - gentle pulsing effect
