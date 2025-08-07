@@ -44,9 +44,9 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   ],
 
   render: {
-    pixelArt: true,
-    antialias: false,
-    roundPixels: true
+    pixelArt: false,
+    antialias: true,
+    roundPixels: false
   },
 
   fps: {

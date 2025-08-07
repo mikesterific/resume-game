@@ -245,13 +245,17 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   
   // Station identifier removed - starbase images are detailed enough
   
-  // Station label with space theme
+  // Station label with space theme - enhanced antialiasing
   const stationLabel = scene.add.text(0, 50, station.name, { 
-    fontSize: '16px', 
-    color: '#ECF0F1',
+    fontSize: '18px', 
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+    fontStyle: 'bold',
+    color: '#FFFFFF',
     align: 'center',
-    backgroundColor: '#2C3E50aa',
-    padding: { x: 6, y: 3 }
+    stroke: '#000000',
+    strokeThickness: 3,
+    backgroundColor: '#2C3E50dd',
+    padding: { x: 8, y: 4 }
   }).setOrigin(0.5)
 
   // Status indicator - gentle pulsing effect
@@ -341,23 +345,32 @@ const setupSpaceBackground = (scene: Phaser.Scene): void => {
     color: '#BDC3C7'
   }).setOrigin(0.5)
 
-  // Sector labels
+  // Sector labels - enhanced antialiasing
   scene.add.text(200, 180, 'DEVELOPMENT SECTOR', {
-    fontSize: '16px',
+    fontSize: '20px',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
     color: '#3498DB',
-    fontStyle: 'bold'
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
   }).setOrigin(0.5)
 
   scene.add.text(800, 180, 'INFRASTRUCTURE SECTOR', {
-    fontSize: '16px',
+    fontSize: '20px',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
     color: '#E74C3C',
-    fontStyle: 'bold'
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
   }).setOrigin(0.5)
 
   scene.add.text(500, 120, 'INNOVATION HUB', {
-    fontSize: '16px',
+    fontSize: '20px',
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
     color: '#F39C12',
-    fontStyle: 'bold'
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 2
   }).setOrigin(0.5)
 }
 
@@ -502,10 +515,15 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.scale.height - 80, 
       '', 
       {
-        fontSize: '16px',
-        color: '#ECF0F1',
-        backgroundColor: '#2C3E50aa',
-        padding: { x: 10, y: 5 }
+        fontSize: '18px',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+        fontStyle: 'bold',
+        color: '#FFFFFF',
+        stroke: '#000000',
+        strokeThickness: 2,
+        backgroundColor: '#2C3E50ee',
+        padding: { x: 12, y: 6 },
+        resolution: 2
       }
     ).setOrigin(0.5).setVisible(false)
 
