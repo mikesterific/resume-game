@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
 import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
 import { spaceStationConfigs, getStationConfig, stationColorPalette } from '@/assets/images/space-stations/station-data'
-import { getStationSpriteConfig, getColorTint } from '@/assets/images/space-stations/sprite-map-config'
+import { getColorTint } from '@/assets/images/space-stations/sprite-map-config'
 
 // Types for scene state
 interface SceneState {
@@ -171,47 +171,48 @@ const createPortalsData = (width: number, height: number): Array<PortalData & { 
 
 // Factory functions for creating game objects
 
+// Map skill IDs to specific starbase images
+const getStarbaseImage = (skillId: string): string => {
+  const starbaseMapping: Record<string, string> = {
+    'frontend': 'starbase1',
+    'testing': 'starbase2', 
+    'architecture': 'starbase3',
+    'tooling': 'starbase4',
+    'devops': 'starbase5',
+    'security': 'starbase6',
+    'ai': 'starbase7',
+    'leadership': 'starbase8'
+  }
+  
+  return starbaseMapping[skillId] || 'starbase1' // Default fallback
+}
+
 const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onInteract: (stationId: string) => void): Phaser.GameObjects.Container => {
   const stationContainer = scene.add.container(station.x, station.y)
   
-  // Get sprite configuration for this station type
-  const spriteConfig = getStationSpriteConfig(station.stationType)
-  
   let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape
   
-  // Debug: Check if source images are loaded
-  console.log(`🔍 Checking station ${station.stationType}-${station.colorVariant}`)
-  console.log(`   five-stations loaded: ${scene.textures.exists('five-stations')}`)
-  console.log(`   more-stations loaded: ${scene.textures.exists('more-stations')}`)
+  // Get the appropriate starbase image for this station
+  const starbaseKey = getStarbaseImage(station.skillId)
   
-  // Simplified approach: Use full source image scaled down with tint
-  if (scene.textures.exists('five-stations')) {
-    console.log(`✅ Using five-stations image for ${station.stationType}`)
+  console.log(`🔍 Creating station ${station.skillId} using ${starbaseKey}`)
+  
+  // Use individual starbase images
+  if (scene.textures.exists(starbaseKey)) {
+    console.log(`✅ Using ${starbaseKey} for ${station.skillId} station`)
     
-    // Create sprite from full source image (simplified)
-    stationBody = scene.add.image(0, 0, 'five-stations')
-    stationBody.setDisplaySize(80, 80) // Scale to 80x80
+    // Create sprite from individual starbase image
+    stationBody = scene.add.image(0, 0, starbaseKey)
+    stationBody.setDisplaySize(120, 120) // Scale to a good visible size
     
-    // Apply color tint
+    // Apply color tint for category identification
     const colorTint = getColorTint(station.colorVariant)
     stationBody.setTint(colorTint)
     
-    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant} with tint: ${colorTint.toString(16)}`)
-  } else if (scene.textures.exists('more-stations')) {
-    console.log(`✅ Using more-stations image for ${station.stationType}`)
-    
-    // Create sprite from more-stations image
-    stationBody = scene.add.image(0, 0, 'more-stations')
-    stationBody.setDisplaySize(80, 80) // Scale to 80x80
-    
-    // Apply color tint
-    const colorTint = getColorTint(station.colorVariant)
-    stationBody.setTint(colorTint)
-    
-    console.log(`✅ Created sprite station: ${station.stationType}-${station.colorVariant} with tint: ${colorTint.toString(16)}`)
+    console.log(`✅ Created starbase station: ${station.skillId} using ${starbaseKey} with tint: ${colorTint.toString(16)}`)
   } else {
-    // Fallback to geometric shape
-    console.warn(`Sprite config not found for station type ${station.stationType}, using fallback`)
+    // Fallback to geometric shape  
+    console.warn(`Starbase image ${starbaseKey} not found for station ${station.skillId}, using fallback`)
     
     const stationColor = stationColorPalette[station.colorVariant as keyof typeof stationColorPalette]
     
@@ -383,27 +384,25 @@ export class SkillSpaceScene extends Phaser.Scene {
   preload(): void {
     preloadPlayerAssets(this)
     
-    // Debug: Log what we're trying to load
-    console.log('🔄 Preloading space station images...')
+    // Load individual starbase images
+    console.log('🔄 Preloading individual starbase images...')
     
-    // Load space station sprite sheets from public folder
-    this.load.image('five-stations', 'Five Intricate Space Stations in Orbit.png')
-    this.load.image('more-stations', 'More Space Stations.png')
+    for (let i = 1; i <= 11; i++) {
+      this.load.image(`starbase${i}`, `starbase${i}.png`)
+    }
     
     // Add load event listeners for debugging
-    this.load.on('filecomplete-image-five-stations', () => {
-      console.log('✅ five-stations loaded successfully!')
-    })
-    
-    this.load.on('filecomplete-image-more-stations', () => {
-      console.log('✅ more-stations loaded successfully!')
+    this.load.on('filecomplete', (key: string) => {
+      if (key.startsWith('starbase')) {
+        console.log(`✅ ${key} loaded successfully!`)
+      }
     })
     
     this.load.on('loaderror', (file: any) => {
       console.error('❌ Failed to load:', file.key, file.src)
     })
     
-    console.log('🔄 Image loading setup complete')
+    console.log('🔄 Starbase image loading setup complete')
   }
 
   create(): void {
