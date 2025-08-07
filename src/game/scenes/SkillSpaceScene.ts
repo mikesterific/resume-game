@@ -37,14 +37,14 @@ interface PortalData {
 
 // Pure functions for scene logic - Space themed data
 const createSpaceStationsData = (): SpaceStationData[] => [
-  // DEVELOPMENT SECTOR
+  // DEVELOPMENT SECTOR (Western Quadrant)
   { 
     id: 'frontend-station', 
     skillId: 'frontend',
     name: 'Frontend Development\nStation', 
     emoji: '👨‍💻', 
-    x: 200, 
-    y: 300, 
+    x: 150, 
+    y: 250, 
     category: 'frontend',
     stationType: 'A',
     colorVariant: 'blue',
@@ -56,8 +56,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'testing',
     name: 'Testing Systems\nPlatform', 
     emoji: '🧪', 
-    x: 200, 
-    y: 450, 
+    x: 320, 
+    y: 480, 
     category: 'testing',
     stationType: 'A',
     colorVariant: 'green',
@@ -69,8 +69,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'architecture',
     name: 'Architecture\nHub', 
     emoji: '📦', 
-    x: 200, 
-    y: 600, 
+    x: 180, 
+    y: 680, 
     category: 'architecture',
     stationType: 'B',
     colorVariant: 'orange',
@@ -78,14 +78,14 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     description: 'Vuex wizard, Supabase integration. Large-scale app architecture at EA, Dell, RentPath.'
   },
   
-  // INFRASTRUCTURE SECTOR
+  // INFRASTRUCTURE SECTOR (Eastern Quadrant)
   { 
     id: 'tooling-station', 
     skillId: 'tooling',
     name: 'Tooling\nPlatform', 
     emoji: '⚙️', 
-    x: 800, 
-    y: 300, 
+    x: 920, 
+    y: 280, 
     category: 'tooling',
     stationType: 'C',
     colorVariant: 'purple',
@@ -97,8 +97,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'devops',
     name: 'DevOps\nCommand', 
     emoji: '📡', 
-    x: 800, 
-    y: 450, 
+    x: 1100, 
+    y: 520, 
     category: 'devops',
     stationType: 'E',
     colorVariant: 'red',
@@ -110,8 +110,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'security',
     name: 'Security\nFortress', 
     emoji: '🔒', 
-    x: 800, 
-    y: 600, 
+    x: 850, 
+    y: 720, 
     category: 'security',
     stationType: 'B',
     colorVariant: 'gray',
@@ -119,14 +119,14 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     description: 'Linux Foundation certified (LFD121). Security and accessibility by design, not bolted on.'
   },
   
-  // INNOVATION HUB
+  // INNOVATION HUB (Northern Command Center)
   { 
     id: 'ai-station', 
     skillId: 'ai',
     name: 'AI Research\nStation', 
     emoji: '🧠', 
-    x: 400, 
-    y: 200, 
+    x: 480, 
+    y: 120, 
     category: 'ai',
     stationType: 'D',
     colorVariant: 'cyan',
@@ -138,8 +138,8 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     skillId: 'leadership',
     name: 'Leadership\nCenter', 
     emoji: '🎤', 
-    x: 600, 
-    y: 200, 
+    x: 720, 
+    y: 160, 
     category: 'leadership',
     stationType: 'C',
     colorVariant: 'gold',
@@ -243,8 +243,7 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
     }
   }
   
-  // Station identifier (smaller and positioned to not cover sprite)
-  const stationEmoji = scene.add.text(35, -35, station.emoji, { fontSize: '16px' }).setOrigin(0.5)
+  // Station identifier removed - starbase images are detailed enough
   
   // Station label with space theme
   const stationLabel = scene.add.text(0, 50, station.name, { 
@@ -271,7 +270,7 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   const dockingPort1 = scene.add.rectangle(-30, 0, 6, 3, 0x95A5A6)
   const dockingPort2 = scene.add.rectangle(30, 0, 6, 3, 0x95A5A6)
 
-  stationContainer.add([stationBody, stationEmoji, stationLabel, statusIndicator, dockingPort1, dockingPort2])
+  stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2])
   scene.physics.add.existing(stationContainer, true)
   
   stationContainer.setData('stationData', station)
