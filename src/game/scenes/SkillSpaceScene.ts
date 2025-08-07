@@ -16,6 +16,7 @@ interface SceneState {
   isDocking: boolean
   isDocked: boolean
   dockedStation: Phaser.GameObjects.GameObject | null
+  isModalOpen: boolean
 }
 
 interface SpaceStationData {
@@ -389,7 +390,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     nearestPortal: null,
     isDocking: false,
     isDocked: false,
-    dockedStation: null
+    dockedStation: null,
+    isModalOpen: false
   }
 
   constructor() {
@@ -423,6 +425,9 @@ export class SkillSpaceScene extends Phaser.Scene {
   create(): void {
     // Initialize scene using functional approach
     this.initializeScene()
+    
+    // Setup modal event listeners
+    this.setupModalEventListeners()
     
     // Global click detection
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -549,9 +554,21 @@ export class SkillSpaceScene extends Phaser.Scene {
     
     // Space for interaction
     this.input.keyboard!.on('keydown-SPACE', () => {
+      // Priority 1: Close modal and undock if modal is open
+      if (this.state.isModalOpen) {
+        // Close the modal
+        gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'closeModal', value: true })
+        
+        // Also undock if currently docked
+        if (this.state.isDocked) {
+          this.undockFromStation()
+        }
+        return
+      }
+      
       if (this.state.isDocking) return // Prevent multiple docking attempts
       
-      // If already docked, undock
+      // If already docked (but no modal open), undock
       if (this.state.isDocked) {
         this.undockFromStation()
         return
@@ -568,6 +585,17 @@ export class SkillSpaceScene extends Phaser.Scene {
           this.dockWithStation(this.state.nearestStation, stationData.skillId)
         }
       }
+    })
+  }
+
+  private setupModalEventListeners(): void {
+    // Listen for modal opened/closed events to track state
+    gameEventBridge.onGameEvent('ui:modal-opened', () => {
+      this.state.isModalOpen = true
+    })
+
+    gameEventBridge.onGameEvent('ui:modal-closed', () => {
+      this.state.isModalOpen = false
     })
   }
 
@@ -591,7 +619,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     ).setOrigin(0.5).setVisible(false)
 
     // Navigation hints with space terminology
-    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Dock with station', {
+    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Dock with station / Close modal & undock', {
       fontSize: '16px',
       color: '#95A5A6'
     })

@@ -114,6 +114,13 @@ function setupEventListeners(): void {
       openModal('traditional-portfolio')
     }
   })
+
+  // Listen for modal close requests from the game (via setting change workaround)
+  gameEventBridge.onGameEvent('ui:setting-changed', (data) => {
+    if (data.key === 'closeModal' && data.value === true) {
+      closeModal()
+    }
+  })
 }
 
 function openModal(modalType: string): void {

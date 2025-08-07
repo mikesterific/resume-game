@@ -9,6 +9,7 @@ interface SceneState {
   cursors: Phaser.Types.Input.Keyboard.CursorKeys | null
   interactionPrompt: Phaser.GameObjects.Text | null
   nearestChest: Phaser.GameObjects.GameObject | null
+  isModalOpen: boolean
 }
 
 interface ProjectData {
@@ -215,7 +216,8 @@ export class ProjectForestScene extends Phaser.Scene {
     projectChests: null,
     cursors: null,
     interactionPrompt: null,
-    nearestChest: null
+    nearestChest: null,
+    isModalOpen: false
   }
 
   constructor() {
@@ -231,6 +233,7 @@ export class ProjectForestScene extends Phaser.Scene {
     
     // Initialize scene using functional approach
     this.initializeScene()
+    this.setupModalEventListeners()
   }
 
   private initializeScene(): void {
@@ -288,11 +291,28 @@ export class ProjectForestScene extends Phaser.Scene {
     this.scene.start(sceneName)
   }
 
+  private setupModalEventListeners(): void {
+    // Listen for modal opened/closed events to track state
+    gameEventBridge.onGameEvent('ui:modal-opened', () => {
+      this.state.isModalOpen = true
+    })
+
+    gameEventBridge.onGameEvent('ui:modal-closed', () => {
+      this.state.isModalOpen = false
+    })
+  }
+
   private setupControls(): void {
     this.state.cursors = this.input.keyboard!.createCursorKeys()
     
     // Space for interaction
     this.input.keyboard!.on('keydown-SPACE', () => {
+      // Priority 1: Close modal if one is open
+      if (this.state.isModalOpen) {
+        gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'closeModal', value: true })
+        return
+      }
+      
       if (this.state.nearestChest) {
         const projectData = this.state.nearestChest.getData('projectData')
         if (projectData) {
@@ -317,7 +337,7 @@ export class ProjectForestScene extends Phaser.Scene {
     ).setOrigin(0.5).setVisible(false)
 
     // Navigation hints
-    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Move | SPACE: Open chest', {
+    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Move | SPACE: Open chest / Close modal', {
       fontSize: '14px',
       color: '#7f8c8d'
     })
