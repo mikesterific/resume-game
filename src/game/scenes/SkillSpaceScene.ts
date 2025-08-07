@@ -273,12 +273,6 @@ const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onIn
   const dockingPort2 = scene.add.rectangle(30, 0, 6, 3, 0x95A5A6)
 
   stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2])
-  scene.physics.add.existing(stationContainer, true)
-  
-  // Set collision body larger than visual size to create 30px buffer
-  const body = stationContainer.body as Phaser.Physics.Arcade.StaticBody
-  body.setSize(330, 330) // 320px station + 10px buffer (5px on each side)
-  body.setOffset(-165, -165) // Center the larger collision body
   
   stationContainer.setData('stationData', station)
   stationContainer.setData('isStation', true)
@@ -446,17 +440,18 @@ export class SkillSpaceScene extends Phaser.Scene {
     
     // Create player - start on right side, vertically centered
     this.state.player = createPlayer(this, width - 150, height / 2)
+    // Set player depth to appear above other objects
+    this.state.player.setDepth(10)
     
     // Create space stations
     this.state.spaceStations = this.add.group()
     const stations = createSpaceStationsData()
     stations.forEach(station => {
       const stationObject = createSpaceStation(this, station, this.handleStationInteraction)
+      // Set stations to lower depth so player appears above them
+      stationObject.setDepth(1)
       this.state.spaceStations!.add(stationObject)
     })
-    
-    // Add collision detection between player and space stations
-    this.physics.add.collider(this.state.player, this.state.spaceStations)
     
     // Setup controls
     this.setupControls()
