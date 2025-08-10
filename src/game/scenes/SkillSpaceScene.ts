@@ -26,6 +26,7 @@ interface SceneState {
   playerHealth: number
   maxPlayerHealth: number
   isPlayerInvulnerable: boolean
+  shields: Phaser.GameObjects.Group | null
 }
 
 interface SpaceStationData {
@@ -40,6 +41,18 @@ interface SpaceStationData {
   stationType: 'A' | 'B' | 'C' | 'D' | 'E'
   colorVariant: string
   sector: 'development' | 'infrastructure' | 'innovation'
+}
+
+interface ShieldConfig {
+  radius: number
+  health: number
+  maxHealth: number
+  color: number
+  regenerationRate: number
+  lastHitTime: number
+  lastRegenTime: number
+  isActive: boolean
+  stationId: string
 }
 
 interface PortalData {
@@ -406,6 +419,137 @@ const ensureEnemyLaserTexture = (scene: Phaser.Scene): void => {
   g.destroy()
 }
 
+// Shield system functions
+const createShieldTexture = (scene: Phaser.Scene, color: number, state: 'healthy' | 'damaged' | 'critical'): string => {
+  const textureKey = `shield-${state}-${color.toString(16)}`
+  if (scene.textures.exists(textureKey)) return textureKey
+
+  const size = 240
+  const g = scene.add.graphics({ x: 0, y: 0 })
+  g.clear()
+
+  // Create gradient effect based on shield state
+  let alpha = 0.3
+  let innerAlpha = 0.1
+  
+  switch (state) {
+    case 'healthy':
+      alpha = 0.3
+      innerAlpha = 0.1
+      break
+    case 'damaged':
+      alpha = 0.4
+      innerAlpha = 0.15
+      color = 0xFFAA00 // Yellow tint
+      break
+    case 'critical':
+      alpha = 0.5
+      innerAlpha = 0.2
+      color = 0xFF4400 // Red tint
+      break
+  }
+
+  // Outer ring (stronger visibility)
+  g.fillStyle(color, alpha)
+  g.fillCircle(size / 2, size / 2, size / 2)
+  
+  // Inner fill (more subtle)
+  g.fillStyle(color, innerAlpha)
+  g.fillCircle(size / 2, size / 2, (size / 2) - 4)
+  
+  // Energy ripple effect
+  for (let i = 0; i < 3; i++) {
+    const rippleRadius = (size / 2) - (i * 15) - 10
+    if (rippleRadius > 0) {
+      g.lineStyle(2, color, alpha * 0.8)
+      g.strokeCircle(size / 2, size / 2, rippleRadius)
+    }
+  }
+
+  g.generateTexture(textureKey, size, size)
+  g.destroy()
+  
+  return textureKey
+}
+
+const getShieldConfigForStation = (station: SpaceStationData): Omit<ShieldConfig, 'health' | 'lastHitTime' | 'lastRegenTime' | 'isActive' | 'stationId'> => {
+  switch (station.sector) {
+    case 'development':
+      return {
+        radius: 90,
+        maxHealth: 4,
+        color: 0x00AAFF, // Blue
+        regenerationRate: 2000 // 2 seconds per health point
+      }
+    case 'infrastructure':
+      return {
+        radius: 100,
+        maxHealth: 5,
+        color: 0xFF8800, // Orange
+        regenerationRate: 1500 // 1.5 seconds per health point
+      }
+    case 'innovation':
+      return {
+        radius: 110,
+        maxHealth: 6,
+        color: 0xAA44FF, // Purple
+        regenerationRate: 1000 // 1 second per health point
+      }
+    default:
+      return {
+        radius: 95,
+        maxHealth: 4,
+        color: 0x00AAFF,
+        regenerationRate: 2000
+      }
+  }
+}
+
+const createStationShield = (scene: Phaser.Scene, station: SpaceStationData, x: number, y: number): Phaser.GameObjects.Container => {
+  const baseConfig = getShieldConfigForStation(station)
+  const shieldConfig: ShieldConfig = {
+    ...baseConfig,
+    health: baseConfig.maxHealth,
+    lastHitTime: 0,
+    lastRegenTime: 0,
+    isActive: true,
+    stationId: station.id
+  }
+
+  const shieldContainer = scene.add.container(x, y)
+  
+  // Create shield visual
+  const healthyTexture = createShieldTexture(scene, baseConfig.color, 'healthy')
+  const shieldSprite = scene.add.image(0, 0, healthyTexture)
+  shieldSprite.setDisplaySize(baseConfig.radius * 2, baseConfig.radius * 2)
+  shieldSprite.setDepth(2) // Above stations but below player
+  
+  // Add subtle pulse animation
+  scene.tweens.add({
+    targets: shieldSprite,
+    scaleX: { from: 0.98, to: 1.02 },
+    scaleY: { from: 0.98, to: 1.02 },
+    duration: 3000,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut'
+  })
+
+  shieldContainer.add(shieldSprite)
+  
+  // Store shield configuration
+  shieldContainer.setData('shieldConfig', shieldConfig)
+  shieldContainer.setData('isShield', true)
+  shieldContainer.setData('shieldSprite', shieldSprite)
+  
+  // Setup physics body for collision detection
+  scene.physics.add.existing(shieldContainer, true) // Static body
+  const body = shieldContainer.body as Phaser.Physics.Arcade.StaticBody
+  body.setCircle(baseConfig.radius, -baseConfig.radius, -baseConfig.radius)
+  
+  return shieldContainer
+}
+
 /**
  * Skills Space Scene - Interactive space command center showcasing technical skills
  * Space stations represent different skill categories in organized sectors
@@ -434,7 +578,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemyLaserTimer: null,
     playerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
     maxPlayerHealth: SkillSpaceScene.PLAYER_MAX_HEALTH,
-    isPlayerInvulnerable: false
+    isPlayerInvulnerable: false,
+    shields: null
   }
 
   constructor() {
@@ -551,6 +696,13 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.spaceStations!.add(stationObject)
     })
     
+    // Create shields for each station
+    this.state.shields = this.add.group()
+    stations.forEach(station => {
+      const shield = createStationShield(this, station, station.x, station.y)
+      this.state.shields!.add(shield)
+    })
+    
     // Setup controls
     this.setupControls()
     
@@ -585,6 +737,31 @@ export class SkillSpaceScene extends Phaser.Scene {
         undefined,
         this
       )
+    }
+
+    // Shield collision detection - lasers hit shields
+    if (this.state.shields) {
+      // Player lasers vs shields
+      if (this.state.lasers) {
+        this.physics.add.overlap(
+          this.state.lasers,
+          this.state.shields,
+          this.handleLaserShieldHit as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+          undefined,
+          this
+        )
+      }
+      
+      // Enemy lasers vs shields
+      if (this.state.enemyLasers) {
+        this.physics.add.overlap(
+          this.state.enemyLasers,
+          this.state.shields,
+          this.handleLaserShieldHit as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+          undefined,
+          this
+        )
+      }
     }
   }
 
@@ -796,6 +973,9 @@ export class SkillSpaceScene extends Phaser.Scene {
         return false as unknown as boolean | null
       }, this)
     }
+
+    // Regenerate shields
+    this.regenerateShields()
   }
 
   private updatePortalProximity(): void {
@@ -988,5 +1168,168 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (this.state.playerHealth <= 0) {
       // Optional: further feedback; currently just ensures invulnerability window
     }
+  }
+
+  private handleLaserShieldHit = (
+    laserObj: Phaser.GameObjects.GameObject,
+    shieldObj: Phaser.GameObjects.GameObject
+  ): void => {
+    const laser = laserObj as Phaser.GameObjects.Sprite
+    const shield = shieldObj as Phaser.GameObjects.Container
+    
+    if (!laser || !shield) return
+    
+    const shieldConfig = shield.getData('shieldConfig') as ShieldConfig
+    if (!shieldConfig || !shieldConfig.isActive) return
+
+    // Destroy the laser
+    laser.destroy()
+
+    // Damage the shield
+    this.damageShield(shield, 1)
+
+    // Create hit effect at impact point
+    this.createShieldHitEffect(laser.x, laser.y, shieldConfig.color)
+  }
+
+  private damageShield(shield: Phaser.GameObjects.Container, damage: number): void {
+    const shieldConfig = shield.getData('shieldConfig') as ShieldConfig
+    if (!shieldConfig || !shieldConfig.isActive) return
+
+    shieldConfig.health = Math.max(0, shieldConfig.health - damage)
+    shieldConfig.lastHitTime = this.time.now
+
+    // Update shield visuals based on health
+    this.updateShieldVisuals(shield)
+
+    // If shield is destroyed, deactivate it
+    if (shieldConfig.health <= 0) {
+      shieldConfig.isActive = false
+      shield.setVisible(false)
+
+      const body = shield.body as Phaser.Physics.Arcade.StaticBody
+      if (body) {
+        body.enable = false
+      }
+      
+      // Create shield destruction effect
+      this.createShieldDestructionEffect(shield.x, shield.y, shieldConfig.color)
+    }
+
+    // Update the shield config data
+    shield.setData('shieldConfig', shieldConfig)
+  }
+
+  private updateShieldVisuals(shield: Phaser.GameObjects.Container): void {
+    const shieldConfig = shield.getData('shieldConfig') as ShieldConfig
+    const shieldSprite = shield.getData('shieldSprite') as Phaser.GameObjects.Image
+    
+    if (!shieldConfig || !shieldSprite) return
+
+    const healthPercent = shieldConfig.health / shieldConfig.maxHealth
+    let state: 'healthy' | 'damaged' | 'critical'
+    
+    if (healthPercent > 0.66) {
+      state = 'healthy'
+    } else if (healthPercent > 0.33) {
+      state = 'damaged'
+    } else {
+      state = 'critical'
+    }
+
+    // Update texture based on shield state
+    const newTexture = createShieldTexture(this, shieldConfig.color, state)
+    shieldSprite.setTexture(newTexture)
+  }
+
+  private regenerateShields(): void {
+    if (!this.state.shields) return
+
+    const currentTime = this.time.now
+
+    this.state.shields.children.each((shieldObj: Phaser.GameObjects.GameObject) => {
+      const shield = shieldObj as Phaser.GameObjects.Container
+      const shieldConfig = shield.getData('shieldConfig') as ShieldConfig
+      
+      if (!shieldConfig) return false as unknown as boolean | null
+
+      const timeSinceLastHit = currentTime - (shieldConfig.lastHitTime || 0)
+
+      // Start regenerating 3s after last hit
+      if (shieldConfig.health < shieldConfig.maxHealth && timeSinceLastHit >= 3000) {
+        const timeSinceLastRegen = currentTime - (shieldConfig.lastRegenTime || 0)
+        if (timeSinceLastRegen >= shieldConfig.regenerationRate) {
+          const wasInactive = !shieldConfig.isActive
+          shieldConfig.health = Math.min(shieldConfig.maxHealth, shieldConfig.health + 1)
+          shieldConfig.lastRegenTime = currentTime
+
+          // Reactivate on first regen point
+          if (wasInactive && shieldConfig.health > 0) {
+            shieldConfig.isActive = true
+            shield.setVisible(true)
+            const body = shield.body as Phaser.Physics.Arcade.StaticBody
+            if (body) {
+              body.enable = true
+            }
+            this.createShieldReactivationEffect(shield.x, shield.y, shieldConfig.color)
+          }
+
+          // Update visuals on each regen tick
+          this.updateShieldVisuals(shield)
+          shield.setData('shieldConfig', shieldConfig)
+        }
+      }
+
+      return false as unknown as boolean | null
+    }, this)
+  }
+
+  private createShieldHitEffect(x: number, y: number, color: number): void {
+    // Create a particle burst effect at hit location
+    const particles = this.add.particles(x, y, 'laser-beam', {
+      scale: { start: 0.3, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      tint: color,
+      speed: { min: 50, max: 150 },
+      lifespan: 300,
+      quantity: 5
+    })
+
+    // Clean up particles after animation
+    this.time.delayedCall(500, () => {
+      particles.destroy()
+    })
+  }
+
+  private createShieldDestructionEffect(x: number, y: number, color: number): void {
+    // Create a larger particle burst for shield destruction
+    const particles = this.add.particles(x, y, 'laser-beam', {
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 1, end: 0 },
+      tint: color,
+      speed: { min: 100, max: 250 },
+      lifespan: 600,
+      quantity: 15
+    })
+
+    this.time.delayedCall(800, () => {
+      particles.destroy()
+    })
+  }
+
+  private createShieldReactivationEffect(x: number, y: number, color: number): void {
+    // Create a gentle reformation effect
+    const particles = this.add.particles(x, y, 'laser-beam', {
+      scale: { start: 0.1, end: 0.4 },
+      alpha: { start: 0.3, end: 0.8 },
+      tint: color,
+      speed: { min: 20, max: 80 },
+      lifespan: 800,
+      quantity: 10
+    })
+
+    this.time.delayedCall(1000, () => {
+      particles.destroy()
+    })
   }
 }
