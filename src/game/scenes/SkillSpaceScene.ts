@@ -427,6 +427,9 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     // Load enemy ship asset
     this.load.image('enemy-ship', 'src/assets/images/enemy-ship.png')
+
+    // Load explosion sprite (note: file name is intentionally spelled as in asset path)
+    this.load.image('enemy-explosion', 'src/assets/images/emeny-explode.png')
     
     // Add load event listeners for debugging
     this.load.on('filecomplete', (key: string) => {
@@ -435,6 +438,9 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
       if (key === 'enemy-ship') {
         console.log('✅ enemy-ship loaded successfully!')
+      }
+      if (key === 'enemy-explosion') {
+        console.log('✅ enemy-explosion loaded successfully!')
       }
     })
     
@@ -519,6 +525,17 @@ export class SkillSpaceScene extends Phaser.Scene {
       const portal = createPortal(this, portalData, this.handleSceneTransition)
       this.state.portals!.add(portal)
     })
+
+    // Laser vs Enemy collision detection
+    if (this.state.lasers && this.state.enemies) {
+      this.physics.add.overlap(
+        this.state.lasers,
+        this.state.enemies,
+        this.handleLaserEnemyOverlap as unknown as Phaser.Types.Physics.Arcade.ArcadePhysicsCallback,
+        undefined,
+        this
+      )
+    }
   }
 
   // Handler methods for interactions
@@ -674,7 +691,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     ).setOrigin(0.5).setVisible(false)
 
     // Navigation hints with space terminology
-    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Dock with station / Close modal & undock', {
+    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact', {
       fontSize: '16px',
       color: '#95A5A6'
     })
@@ -782,6 +799,39 @@ export class SkillSpaceScene extends Phaser.Scene {
       laser.rotation = rotation
 
       this.state.lasers!.add(laser)
+    })
+  }
+
+  private handleLaserEnemyOverlap = (
+    laserObj: Phaser.GameObjects.GameObject,
+    enemyObj: Phaser.GameObjects.GameObject
+  ): void => {
+    const enemy = enemyObj as Phaser.GameObjects.Sprite
+    const laser = laserObj as Phaser.GameObjects.Sprite
+    if (!enemy || !laser) return
+    if (enemy.getData('isDead')) return
+    enemy.setData('isDead', true)
+
+    this.spawnExplosionAt(enemy.x, enemy.y)
+
+    enemy.destroy()
+    laser.destroy()
+  }
+
+  private spawnExplosionAt = (x: number, y: number): void => {
+    const explosion = this.add.image(x, y, 'enemy-explosion')
+    explosion.setDepth(50)
+    explosion.setBlendMode(Phaser.BlendModes.ADD)
+    explosion.setDisplaySize(160, 160)
+    explosion.setAlpha(0.9)
+
+    this.tweens.add({
+      targets: explosion,
+      scale: { from: 0.1, to: 0.5 },
+      alpha: { from: 1 , to: 0 },
+      duration: 550,
+      ease: 'Cubic.Out',
+      onComplete: () => explosion.destroy()
     })
   }
 }

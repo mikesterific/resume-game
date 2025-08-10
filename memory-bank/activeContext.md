@@ -17,7 +17,8 @@
 
 **New Initiative (Optional)**: Space Combat Mini-Feature
 - Enemy foe introduced in Skills Space scene (nose-to-nose with hero)
-- Objective: lightweight combat loop (enemy movement + player shots)
+- Controls: `D` = dock/undock/portal, `SPACE` = hold to fire dual lasers
+- Lasers: parallel straight shots from wing mounts; tuned tighter spacing
 - Constraint: must remain toggleable and non-intrusive for professional view
 
 **Final Implementation Achievements**:

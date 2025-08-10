@@ -1,5 +1,12 @@
 # Build Progress
 
+## January 9, 2025: Controls Update + Hold-to-Fire Lasers ✅
+- Dock/Interact key remapped from SPACE → `D`
+- SPACE now fires dual lasers from wing mounts; hold to sustain fire, release to stop
+- Disabled previous auto-fire loop; implemented timer on keydown, cleared on keyup
+- Kept beams parallel to ship heading; narrower wing offsets for tighter look
+- Type-check clean; ready to iterate on impact/collision next
+
 ## January 9, 2025: Space Combat Mini-Feature Kickoff - Enemy Foe Added ✅
 
 - Preloaded `enemy-ship` asset and spawned first enemy in `SkillSpaceScene`

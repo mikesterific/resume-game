@@ -279,6 +279,8 @@ With the Skills Space Scene transformation complete, potential next enhancements
 ### 🎯 New Feature: Space Combat Mini-Game (Optional)
 - [x] Establish goal: lightweight, optional combat for fun without hurting professionalism
 - [x] Add initial foe: enemy ship sprite spawned in Skills Space scene
+- [x] Input: Remap docking to `D`; SPACE = hold-to-fire lasers
+- [x] Dual parallel lasers from wing mounts; straight ahead, adjustable offset
 - [ ] Basic enemy movement/AI (advance/patrol)
 - [ ] Player projectiles (laser/bullets) with cooldown
 - [ ] Collision + simple health system (enemy + player)

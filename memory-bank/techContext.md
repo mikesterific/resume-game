@@ -69,3 +69,14 @@ npm run dev
 - 80x80px target size for consistent rendering
 - Color tinting instead of multiple asset variants
 - Render textures for dynamic sprite generation
+
+## Input Mapping (Game)
+- `WASD`/Arrow keys: movement
+- `D`: Dock/undock/interact (replaces former SPACE behavior)
+- `SPACE`: Fire lasers; holding creates a short-interval repeat until released
+
+## Laser System
+- Procedural texture `laser-beam` (6x28) with additive blend
+- Dual emitters offset near wing roots; aligned to player rotation (forward vector)
+- Lifetime cleanup (~2.5s) to prevent buildup
+- Repeat interval currently 140ms; speed ~800px/s (tunable)
