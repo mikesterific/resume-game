@@ -1,5 +1,12 @@
 # Build Progress
 
+## January 9, 2025: Space Combat Mini-Feature Kickoff - Enemy Foe Added ✅
+
+- Preloaded `enemy-ship` asset and spawned first enemy in `SkillSpaceScene`
+- Positioned enemy nose-to-nose with hero; rotated to face hero
+- Added `enemies` group to scene state for future AI/collisions
+- Maintains professional tone; combat will be optional via UI toggle
+
 ## January 6, 2025: Skills Space Scene Transformation - COMPLETE ✅
 
 ### **LEVEL 3 FEATURE IMPLEMENTATION**: Skills Village → Skills Command Center

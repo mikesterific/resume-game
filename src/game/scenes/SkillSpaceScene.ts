@@ -17,6 +17,9 @@ interface SceneState {
   isDocked: boolean
   dockedStation: Phaser.GameObjects.GameObject | null
   isModalOpen: boolean
+  enemies: Phaser.GameObjects.Group | null
+  lasers: Phaser.GameObjects.Group | null
+  laserTimer: Phaser.Time.TimerEvent | null
 }
 
 interface SpaceStationData {
@@ -375,6 +378,17 @@ const setupSpaceBackground = (scene: Phaser.Scene): void => {
   }).setOrigin(0.5)
 }
 
+// Utility to generate a simple glowing laser texture if not already present
+const ensureLaserTexture = (scene: Phaser.Scene): void => {
+  if (scene.textures.exists('laser-beam')) return
+  const g = scene.add.graphics({ x: 0, y: 0 })
+  g.clear()
+  g.fillStyle(0x00ffff, 1)
+  g.fillRoundedRect(0, 0, 6, 28, 3)
+  g.generateTexture('laser-beam', 6, 28)
+  g.destroy()
+}
+
 /**
  * Skills Space Scene - Interactive space command center showcasing technical skills
  * Space stations represent different skill categories in organized sectors
@@ -391,7 +405,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     isDocking: false,
     isDocked: false,
     dockedStation: null,
-    isModalOpen: false
+    isModalOpen: false,
+    enemies: null,
+    lasers: null,
+    laserTimer: null
   }
 
   constructor() {
@@ -407,11 +424,17 @@ export class SkillSpaceScene extends Phaser.Scene {
     for (let i = 1; i <= 11; i++) {
       this.load.image(`starbase${i}`, `starbase${i}.png`)
     }
+
+    // Load enemy ship asset
+    this.load.image('enemy-ship', 'src/assets/images/enemy-ship.png')
     
     // Add load event listeners for debugging
     this.load.on('filecomplete', (key: string) => {
       if (key.startsWith('starbase')) {
         console.log(`✅ ${key} loaded successfully!`)
+      }
+      if (key === 'enemy-ship') {
+        console.log('✅ enemy-ship loaded successfully!')
       }
     })
     
@@ -453,6 +476,25 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.player = createPlayer(this, width - 150, height / 2)
     // Set player depth to appear above other objects
     this.state.player.setDepth(10)
+
+    // Prepare laser assets/group
+    ensureLaserTexture(this)
+    this.state.lasers = this.add.group()
+
+    // Create enemies group and a starter enemy
+    this.state.enemies = this.add.group()
+    const enemyOffset = 250
+    const enemyX = Math.max(100, (this.state.player as Phaser.GameObjects.Sprite).x - enemyOffset)
+    const enemyY = (this.state.player as Phaser.GameObjects.Sprite).y
+    const enemy = this.add.sprite(enemyX, enemyY, 'enemy-ship')
+    enemy.setDisplaySize(96, 96)
+    this.physics.add.existing(enemy)
+    enemy.setDepth(5)
+    enemy.setRotation(Math.PI / 2) // face right, toward the hero who faces left
+    enemy.setData('isEnemy', true)
+    this.state.enemies.add(enemy)
+
+    // Lasers are fired manually when SPACE is held
     
     // Create space stations
     this.state.spaceStations = this.add.group()
@@ -551,29 +593,42 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   private setupControls(): void {
     this.state.cursors = this.input.keyboard!.createCursorKeys()
+
+    const keyD = this.input.keyboard!.addKey('D')
+    const keySpace = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+
+    // Laser hold-to-fire: SPACE down starts repeat; up stops
+    keySpace.on('down', () => {
+      if (this.state.laserTimer) {
+        this.state.laserTimer.remove(false)
+        this.state.laserTimer = null
+      }
+      this.fireLasersAtEnemy()
+      this.state.laserTimer = this.time.addEvent({ delay: 140, loop: true, callback: () => this.fireLasersAtEnemy() })
+    })
+
+    keySpace.on('up', () => {
+      if (this.state.laserTimer) {
+        this.state.laserTimer.remove(false)
+        this.state.laserTimer = null
+      }
+    })
     
-    // Space for interaction
-    this.input.keyboard!.on('keydown-SPACE', () => {
+    // D for docking/interaction
+    keyD.on('down', () => {
       // Priority 1: Close modal and undock if modal is open
       if (this.state.isModalOpen) {
-        // Close the modal
         gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'closeModal', value: true })
-        
-        // Also undock if currently docked
         if (this.state.isDocked) {
           this.undockFromStation()
         }
         return
       }
-      
-      if (this.state.isDocking) return // Prevent multiple docking attempts
-      
-      // If already docked (but no modal open), undock
+      if (this.state.isDocking) return
       if (this.state.isDocked) {
         this.undockFromStation()
         return
       }
-      
       if (this.state.nearestPortal) {
         const portalData = this.state.nearestPortal.getData('portalData')
         if (portalData) {
@@ -639,6 +694,18 @@ export class SkillSpaceScene extends Phaser.Scene {
       // Check for station proximity
       this.updateStationProximity()
     }
+
+    // Cleanup lasers after lifetime
+    if (this.state.lasers) {
+      const now = this.time.now
+      this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
+        const createdAt = laserObj.getData('createdAt') as number | undefined
+        if (createdAt && now - createdAt > 2500) {
+          laserObj.destroy()
+        }
+        return false as unknown as boolean | null
+      }, this)
+    }
   }
 
   private updatePortalProximity(): void {
@@ -677,5 +744,44 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.interactionPrompt.setVisible(false)
       }
     }
+  }
+
+  private fireLasersAtEnemy = (): void => {
+    if (!this.state.player) return
+
+    const player = this.state.player
+
+    const wingOffsetsLocal = [
+      new Phaser.Math.Vector2(-18, 18),
+      new Phaser.Math.Vector2(18, 18)
+    ]
+
+    const rotation = player.rotation
+
+    // Forward vector for a sprite that faces up by default
+    const forward = new Phaser.Math.Vector2(Math.sin(rotation), -Math.cos(rotation)).normalize()
+
+    wingOffsetsLocal.forEach(offset => {
+      const rotated = offset.clone().rotate(rotation)
+      const spawnX = player.x + rotated.x
+      const spawnY = player.y + rotated.y
+
+      const laser = this.add.sprite(spawnX, spawnY, 'laser-beam')
+      laser.setBlendMode(Phaser.BlendModes.ADD)
+      laser.setDepth(9)
+      this.physics.add.existing(laser)
+      laser.setData('createdAt', this.time.now)
+
+      const body = laser.body as Phaser.Physics.Arcade.Body
+      body.setAllowRotation(true)
+
+      const speed = 800
+      body.setVelocity(forward.x * speed, forward.y * speed)
+
+      // Align laser orientation with player's facing
+      laser.rotation = rotation
+
+      this.state.lasers!.add(laser)
+    })
   }
 }

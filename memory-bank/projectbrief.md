@@ -22,6 +22,7 @@
 - **Résumé Integration**: Interactive résumé as a "scroll" or "book" in Résumé Tower
 - **Animations**: Smooth pixel-art animations, sparkles, fade-ins, walking cycles
 - **HDMI Optimization**: High-resolution display support (1080p/4K) for presentations
+- **Optional Mini Combat**: Lightweight, toggleable enemy encounter for engagement (professional-safe)
 
 ### Technical Requirements
 - Web-based interface using Phaser.js + Vue 3 + Vite

@@ -33,6 +33,7 @@ An innovative, game-like professional portfolio that transforms the traditional 
 - Clickable objects revealing project details in animated modals
 - Downloadable PDF résumé option
 - Hidden achievements and easter eggs for engagement
+- Optional combat: simple enemy and projectiles (toggleable, non-intrusive)
 
 ### Professional Integration
 - Project showcases with descriptions, images, videos, live demos

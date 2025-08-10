@@ -15,6 +15,11 @@
 - **Assets**: "Five Intricate Space Stations in Orbit.png" strategy implemented
 - **Status**: FULLY COMPLETE - Live and functional
 
+**New Initiative (Optional)**: Space Combat Mini-Feature
+- Enemy foe introduced in Skills Space scene (nose-to-nose with hero)
+- Objective: lightweight combat loop (enemy movement + player shots)
+- Constraint: must remain toggleable and non-intrusive for professional view
+
 **Final Implementation Achievements**:
 - ✅ **Complete Scene Transformation**: SkillVillageScene → SkillSpaceScene operational
 - ✅ **Professional Space Theme**: Industrial space stations maintaining business credibility
