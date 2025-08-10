@@ -82,3 +82,158 @@ npm run dev
 - Dual emitters offset near wing roots; aligned to player rotation (forward vector)
 - Lifetime cleanup (~2.5s) to prevent buildup
 - Repeat interval currently 140ms; speed ~800px/s (tunable)
+
+## Phaser 3 Collision Detection System
+
+### Physics Systems Overview
+Phaser 3 provides two main physics engines with different collision approaches:
+
+#### Arcade Physics (Simple & Fast)
+- **AABB (Axis-Aligned Bounding Box)** collision detection
+- Performance-oriented for simple games
+- Rectangle-based collision boundaries
+- Suitable for platformers and simple space games
+
+#### Matter Physics (Complex & Realistic)
+- **Polygon-based collision detection** using Matter.js
+- More realistic physics simulation
+- Supports complex shapes and realistic physics
+- Higher computational cost
+
+### Collision vs Overlap Detection
+
+**Collision**: Bodies physically separate when they touch (solid objects)
+```javascript
+// Bodies will separate on contact
+this.physics.add.collider(player, platforms);
+```
+
+**Overlap**: Bodies can pass through each other, but events are triggered (sensors/triggers)
+```javascript
+// Bodies can pass through, but callback is triggered
+this.physics.add.overlap(player, collectibles, collectItem);
+```
+
+### Collision Detection Process
+
+1. **Broad Phase**: Quick spatial checks (grid/quadtree) to eliminate impossible collisions
+2. **Narrow Phase**: Detailed collision math for potential collisions
+3. **Collision Response**: Calculate separation, apply impulses, update positions
+
+### Body Types & Properties
+
+**Dynamic Bodies**: Can move and be affected by collisions
+```javascript
+player.body.setCollideWorldBounds(true);
+player.body.setBounce(0.2); // 20% velocity bounce
+```
+
+**Static Bodies**: Cannot move but can be collided with
+```javascript
+platform.body.setImmovable(true);
+```
+
+### Collision Callbacks & Events
+
+**Process Callback (Pre-collision)**:
+```javascript
+function processCallback(obj1, obj2) {
+    // Return true to allow collision, false to prevent
+    if (obj1.invulnerable) return false;
+    return true;
+}
+```
+
+**Collide Callback (Post-collision)**:
+```javascript
+function collideCallback(obj1, obj2) {
+    // Handle collision effects after separation
+    obj1.takeDamage();
+    obj2.destroy();
+}
+```
+
+### Advanced Collision Features
+
+**Collision Categories** (Matter Physics):
+```javascript
+const PLAYER_CATEGORY = 0x0001;
+const ENEMY_CATEGORY = 0x0002;
+const PROJECTILE_CATEGORY = 0x0004;
+
+player.setCollisionCategory(PLAYER_CATEGORY);
+player.setCollidesWith([ENEMY_CATEGORY, WALL_CATEGORY]);
+```
+
+**World Boundaries**:
+```javascript
+world.checkCollision = {
+    up: true,
+    down: true,
+    left: true,
+    right: true
+};
+```
+
+### Performance Optimization Rules
+
+1. **Group Similar Objects**: Use physics groups for efficient collision checking
+```javascript
+const enemies = this.physics.add.group();
+const bullets = this.physics.add.group();
+this.physics.add.collider(bullets, enemies);
+```
+
+2. **Static vs Dynamic**: Use static bodies for immovable objects
+3. **Collision Layers**: Organize collision detection by game logic layers
+4. **Mass-based Separation**: Heavier objects move less during collisions
+
+### Common Game Collision Patterns
+
+**Space Game Pattern**:
+```javascript
+// Player vs boundaries
+this.physics.add.collider(player, worldBounds);
+
+// Player lasers vs enemies (destroy on hit)
+this.physics.add.overlap(playerLasers, enemies, destroyEnemy);
+
+// Player vs enemy lasers (damage/health system)
+this.physics.add.overlap(player, enemyLasers, playerHit);
+
+// Player vs enemies (collision damage)
+this.physics.add.collider(player, enemies, playerCollision);
+```
+
+### Collision Resolution Properties
+
+**Bounce & Friction**:
+```javascript
+body.setBounce(0.8);     // Energy retained after collision
+body.setFriction(0.1);   // Movement resistance
+```
+
+**Mass & Velocity Transfer**:
+```javascript
+body.setMass(2);         // Affects collision response
+// Collision affects both bodies based on mass, bounce, and impact angle
+```
+
+### Event System Integration
+
+**Global Physics Events**:
+```javascript
+this.physics.world.on('collide', (event, bodyA, bodyB) => {
+    // Handle any collision in the world
+});
+```
+
+**Body-specific Events**:
+```javascript
+player.body.onCollide = true;
+player.body.on('collide', (collision) => {
+    // Handle collisions for specific body
+});
+```
+
+This collision system enables complex game interactions while maintaining performance through spatial partitioning and optimized algorithms. The choice between Arcade and Matter physics depends on the complexity requirements of the game mechanics.

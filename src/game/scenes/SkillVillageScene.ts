@@ -140,7 +140,7 @@ const createSkillNPC = (scene: Phaser.Scene, skill: SkillData, onInteract: (skil
   }).setOrigin(0.5)
 
   npc.add([npcBody, npcEmoji, npcLabel])
-  scene.physics.add.existing(npc, true)
+  // NPC physics body removed - no collision detection needed
   
   npc.setData('skillData', skill)
   npc.setData('isNPC', true)
@@ -168,7 +168,7 @@ const createPortal = (
     }).setOrigin(0.5)
   ])
   
-  scene.physics.add.existing(portal, true)
+  // Portal physics body removed - no collision detection needed
   portal.setData('portalData', { 
     id: portalData.id, 
     name: portalData.name, 

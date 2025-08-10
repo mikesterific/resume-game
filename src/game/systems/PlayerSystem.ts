@@ -30,7 +30,7 @@ const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObj
   
   const playerBody = player.body as Phaser.Physics.Arcade.Body
   playerBody.setSize(PLAYER_CONFIG.SIZE, PLAYER_CONFIG.SIZE)
-  playerBody.setCollideWorldBounds(true)
+  // Removed: playerBody.setCollideWorldBounds(true) - no collision detection
   playerBody.setDrag(PLAYER_CONFIG.DRAG)
   
   // Add rotation state tracking - start facing left

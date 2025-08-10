@@ -276,6 +276,76 @@ With the Skills Space Scene transformation complete, potential next enhancements
 
 **CURRENT STATUS**: Ready for Phase 4 features or production preparation
 
+### 🧹 LEVEL 2 TASK: COLLISION DETECTION CLEANUP ⚡ ACTIVE
+**Complexity**: Level 2 (Simple Enhancement)
+**Goal**: Remove all existing collision detection systems to start fresh with our new Phaser collision knowledge
+
+#### Current Collision Detection Analysis ✅
+Based on codebase analysis, the following collision detection systems are currently implemented:
+
+**📋 Files Containing Collision Code:**
+- `src/game/GameConfig.ts` - Arcade physics configuration
+- `src/game/systems/PlayerSystem.ts` - Player physics body setup
+- `src/game/scenes/SkillSpaceScene.ts` - Complex collision system:
+  - Player lasers vs enemies overlap detection
+  - Enemy lasers vs player overlap detection  
+  - Shield collision detection (lasers vs shields)
+  - Physics bodies for shields, enemies, lasers
+- `src/game/scenes/SkillVillageScene.ts` - Static physics bodies for NPCs/portals
+- `src/game/scenes/ProjectForestScene.ts` - Static physics bodies for chests
+- `src/game/scenes/ResumeTowerScene.ts` - Static physics bodies for books
+
+**⚙️ Collision Systems to Remove:**
+1. **Arcade Physics Configuration** - Keep basic setup but remove collision-specific config
+2. **Player World Bounds Collision** - `setCollideWorldBounds(true)`
+3. **Laser Combat System** - All laser vs enemy/player overlap detection
+4. **Shield Defense System** - All shield collision mechanics
+5. **Static Body Creation** - Remove physics bodies for NPCs, portals, chests, books
+6. **Physics Body Management** - Remove collision detection for all game objects
+
+#### Implementation Plan 📝
+
+**Phase 1: Core Physics Cleanup (30 min)**
+- [ ] Remove collision-specific configuration from GameConfig.ts
+- [ ] Clean up PlayerSystem.ts collision setup (keep basic physics for movement)
+- [ ] Remove world bounds collision from player
+
+**Phase 2: Scene Collision Removal (45 min)**  
+- [ ] Remove all overlap detection from SkillSpaceScene.ts
+- [ ] Remove physics bodies from shields, enemies, lasers
+- [ ] Clean up collision callback methods
+- [ ] Remove static physics bodies from SkillVillageScene.ts
+- [ ] Remove static physics bodies from ProjectForestScene.ts
+- [ ] Remove static physics bodies from ResumeTowerScene.ts
+
+**Phase 3: Code Cleanup and Testing (15 min)**
+- [ ] Remove collision-related imports and interfaces
+- [ ] Test that game still functions without collision detection
+- [ ] Verify all scenes load and player movement works
+- [ ] Document removed systems for future reference
+
+**⚠️ Potential Challenges:**
+- Ensuring player movement still works without collision bodies
+- Maintaining interaction detection for docking/UI triggers (may need distance-based detection)
+- Preserving laser firing mechanics without collision
+
+**✅ Success Criteria:**
+- Game runs without any physics collision detection
+- Player movement and scene navigation preserved
+- Clean codebase ready for implementing new collision system
+- No collision-related errors in console
+
+#### Files to Modify:
+- `src/game/GameConfig.ts`
+- `src/game/systems/PlayerSystem.ts` 
+- `src/game/scenes/SkillSpaceScene.ts`
+- `src/game/scenes/SkillVillageScene.ts`
+- `src/game/scenes/ProjectForestScene.ts`
+- `src/game/scenes/ResumeTowerScene.ts`
+
+**Status**: PLANNING COMPLETE - Ready for Implementation
+**Next Mode**: IMPLEMENT MODE
+
 ### 🎯 New Feature: Space Combat Mini-Game (Optional)
 - [x] Establish goal: lightweight, optional combat for fun without hurting professionalism
 - [x] Add initial foe: enemy ship sprite spawned in Skills Space scene
