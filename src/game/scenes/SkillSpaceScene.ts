@@ -977,16 +977,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.playerHealth = Math.max(0, this.state.playerHealth - amount)
     this.updateHealthUI()
 
-    // Feedback: explosion + brief flicker and invulnerability window
+    // Feedback: explosion and invulnerability window (no flash)
     this.spawnHeroExplosionAt(this.state.player.x, this.state.player.y)
     this.state.isPlayerInvulnerable = true
-    this.tweens.add({
-      targets: this.state.player,
-      alpha: { from: 0.3, to: 1 },
-      duration: 150,
-      yoyo: true,
-      repeat: 3
-    })
     this.time.delayedCall(SkillSpaceScene.PLAYER_INVULNERABILITY_MS, () => {
       this.state.isPlayerInvulnerable = false
     })
