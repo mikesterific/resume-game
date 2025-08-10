@@ -107,5 +107,10 @@ System is ready to begin Phase 2 implementation or transition to new development
 **Task Status**: READY FOR PHASE 2  
 **Next Recommended Mode**: VAN MODE (for Phase 2 initialization) or IMPLEMENTATION MODE
 
+## Recent Bug Fix
+- **Shield regeneration consistency**: Fixed iteration callbacks that returned `false` inside `Group.children.each`, which stopped processing after the first shield. Callbacks now return `null`, ensuring all shields update and regenerate.
+- **Validation**: Added temporary in-scene labels and periodic JSON snapshots; applied one-time `-1 HP` to all shields for visible regen; confirmed uniform behavior.
+- **Decision**: Keep a uniform shield config temporarily for testing; restore sector-specific configs after validation if desired.
+
 ---
 *Memory Bank ready for next task - Archive complete*
