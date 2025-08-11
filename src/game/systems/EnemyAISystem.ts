@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { ShieldMapManager, CollisionLayer } from './ShieldMappingSystem'
+import { ShieldMapManager, CollisionLayer, type StationOccluder } from './ShieldMappingSystem'
 
 /**
  * Enemy AI System - Centralized enemy behavior management for Portfolio Quest
@@ -81,6 +81,8 @@ interface EnemyAIState {
   maxEnemies: number
   spawnRadius: number
   enemyLasers: Phaser.GameObjects.Group | null
+  avoidShieldsEnabled: boolean
+  avoidStationsEnabled: boolean
 }
 
 // Default enemy configuration (REBALANCED)
@@ -169,6 +171,43 @@ const SteeringHelpers = {
     // Scale avoidance force based on proximity
     const avoidanceForce = awayFromShield.scale(avoidanceRadius * 2)
     return avoidanceForce
+  },
+
+  // Smooth avoidance around station occluders (non-colliding)
+  avoidStations(
+    position: Phaser.Math.Vector2,
+    velocity: Phaser.Math.Vector2,
+    occluders: StationOccluder[] | undefined,
+    avoidanceRadius: number
+  ): Phaser.Math.Vector2 {
+    if (!occluders || occluders.length === 0) return new Phaser.Math.Vector2(0, 0)
+
+    const lookAhead = Math.max(80, avoidanceRadius) // how far ahead to predict
+    const forward = velocity.clone().length() > 1 ? velocity.clone().normalize() : new Phaser.Math.Vector2(1, 0)
+    const aheadPoint = position.clone().add(forward.clone().scale(lookAhead))
+
+    let avoidance = new Phaser.Math.Vector2(0, 0)
+    for (const occ of occluders) {
+      const effectiveRadius = occ.radius + avoidanceRadius * 0.6
+      const distNow = Phaser.Math.Distance.Between(position.x, position.y, occ.position.x, occ.position.y)
+      const distAhead = Phaser.Math.Distance.Between(aheadPoint.x, aheadPoint.y, occ.position.x, occ.position.y)
+
+      const isThreat = distNow < effectiveRadius || distAhead < effectiveRadius
+      if (!isThreat) continue
+
+      // Repulsion away from occluder center
+      const away = position.clone().subtract(occ.position)
+      const distance = Math.max(away.length(), 1)
+      const strength = Phaser.Math.Clamp(1 - (distance / effectiveRadius), 0, 1)
+      const repulse = away.normalize().scale(avoidanceRadius * 2 * strength)
+
+      // Add mild tangential component to curve around
+      const tangent = new Phaser.Math.Vector2(-away.y, away.x).normalize().scale(avoidanceRadius * 0.6 * strength)
+
+      avoidance.add(repulse).add(tangent)
+    }
+
+    return avoidance
   }
 }
 
@@ -188,7 +227,9 @@ export class EnemyAISystem {
       nextAgentId: 1,
       maxEnemies: 10,
       spawnRadius: 300,
-      enemyLasers: null
+      enemyLasers: null,
+      avoidShieldsEnabled: false,
+      avoidStationsEnabled: true
     }
   }
 
@@ -210,6 +251,16 @@ export class EnemyAISystem {
   // Enable/disable combat
   setCombatEnabled(enabled: boolean): void {
     this.state.combatEnabled = enabled
+  }
+
+  // Enable/disable shield avoidance for enemy ships
+  setAvoidShieldsEnabled(enabled: boolean): void {
+    this.state.avoidShieldsEnabled = enabled
+  }
+
+  // Enable/disable station avoidance for enemy ships
+  setAvoidStationsEnabled(enabled: boolean): void {
+    this.state.avoidStationsEnabled = enabled
   }
 
   // Create a new enemy agent
@@ -346,7 +397,7 @@ export class EnemyAISystem {
     let desiredVelocity = this.updateBehavior(agent, position, time, delta)
 
     // Apply shield avoidance if needed
-    if (this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
+    if (this.state.avoidShieldsEnabled && this.state.shieldManager && time - agent.lastAvoidanceTime > 200) {
       const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
       const avoidance = SteeringHelpers.avoidShields(
         position,
@@ -358,6 +409,22 @@ export class EnemyAISystem {
       if (avoidance.length() > 0) {
         desiredVelocity = avoidance // keep simple/strong avoidance
         agent.lastAvoidanceTime = time
+      }
+    }
+
+    // Apply smooth station avoidance (non-colliding)
+    if (this.state.avoidStationsEnabled && this.state.shieldManager) {
+      const currentVelocity = new Phaser.Math.Vector2(body.velocity.x, body.velocity.y)
+      const occluders = this.state.shieldManager.getStationOccluders()
+      const stationAvoid = SteeringHelpers.avoidStations(
+        position,
+        currentVelocity,
+        occluders,
+        agent.config.avoidanceRadius
+      )
+      if (stationAvoid.length() > 0) {
+        // Blend avoidance into desired velocity for smooth curve
+        desiredVelocity = desiredVelocity.add(stationAvoid)
       }
     }
 
