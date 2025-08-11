@@ -566,6 +566,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     enemyAI: null
   }
 
+  private xpTotal: number = 0
+  private xpText: Phaser.GameObjects.Text | null = null
+
   constructor() {
     super({ key: 'SkillSpaceScene' })
   }
@@ -636,6 +639,9 @@ export class SkillSpaceScene extends Phaser.Scene {
   private initializeScene(): void {
     const { width, height } = this.scale
      
+    // Initialize XP for this scene session
+    this.xpTotal = 0
+    
     // Setup space background
     setupSpaceBackground(this)
     
@@ -947,6 +953,17 @@ export class SkillSpaceScene extends Phaser.Scene {
       strokeThickness: 3
     }).setDepth(100)
     this.updateHealthUI()
+
+    // XP display (top-left, below health)
+    this.xpText = this.add.text(24, 60, 'XP: 0', {
+      fontSize: '20px',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+      fontStyle: 'bold',
+      color: '#F1C40F',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setDepth(100)
+    this.updateXpUI()
   }
 
   update(): void {
@@ -1103,6 +1120,19 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     this.spawnExplosionAt(enemy.x, enemy.y)
 
+    // Award XP for enemy kill
+    this.xpTotal += 10
+    
+    // Update in-scene XP display
+    this.updateXpUI()
+    this.animateXpGain(10)
+    
+    // Also emit event for GameUIScene (if it's working)
+    gameEventBridge.emitGameEvent('game:xp-changed', { 
+      amount: 10, 
+      total: this.xpTotal 
+    })
+
     // Remove enemy from AI system
     if (this.state.enemyAI) {
       const agent = this.state.enemyAI.getAgentBySprite(enemy)
@@ -1164,6 +1194,44 @@ export class SkillSpaceScene extends Phaser.Scene {
   private updateHealthUI(): void {
     if (!this.state.healthText) return
     this.state.healthText.setText(`Health: ${this.state.playerHealth}/${this.state.maxPlayerHealth}`)
+  }
+
+  private updateXpUI(): void {
+    if (!this.xpText) return
+    this.xpText.setText(`XP: ${this.xpTotal}`)
+  }
+
+  private animateXpGain(amount: number): void {
+    if (!this.xpText) return
+
+    // Scale animation for XP text
+    this.tweens.add({
+      targets: this.xpText,
+      scaleX: { from: 1, to: 1.3 },
+      scaleY: { from: 1, to: 1.3 },
+      duration: 200,
+      yoyo: true,
+      ease: 'Back.easeOut'
+    })
+
+    // Floating +XP text
+    const floatingText = this.add.text(this.xpText.x + 80, this.xpText.y, `+${amount}`, {
+      fontSize: '18px',
+      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
+      fontStyle: 'bold',
+      color: '#F1C40F',
+      stroke: '#000000',
+      strokeThickness: 2
+    }).setDepth(101)
+
+    this.tweens.add({
+      targets: floatingText,
+      y: floatingText.y - 40,
+      alpha: { from: 1, to: 0 },
+      duration: 1000,
+      ease: 'Power2.easeOut',
+      onComplete: () => floatingText.destroy()
+    })
   }
 
   private damagePlayer(amount: number): void {

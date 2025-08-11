@@ -77,6 +77,7 @@ export interface GameEvents {
   'game:skill-selected': { skillId: string }
   'game:resume-opened': void
   'game:contact-opened': void
+  'game:xp-changed': { amount: number; total: number }
   
   // From Vue to Game
   'ui:modal-opened': { type: string }

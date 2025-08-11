@@ -448,6 +448,61 @@ Based on codebase analysis, the following collision detection systems are curren
 **Status**: ✅ IMPLEMENTATION COMPLETE
 **Next Mode**: TESTING & VALIDATION
 
+### ⚡ LEVEL 2 TASK: XP System (Award +10 XP on Enemy Kill) — PLANNING
+
+**Complexity**: Level 2 (Simple Enhancement)
+
+#### Overview of Changes
+- Add a global XP counter and lightweight UI display in `GameUIScene`.
+- Award +10 XP when a player laser destroys an enemy in `SkillSpaceScene` (single award per enemy).
+- Emit an event via `GameEventBridge` (e.g., `game:xp-changed`) so the UI updates without tight coupling.
+- Reset XP on scene start for now; persistence can be a follow-up enhancement.
+
+#### Files to Modify
+- `src/types/game.ts`
+  - Extend `GameEvents` with `'game:xp-changed': { amount: number; total: number }`.
+- `src/game/scenes/GameUIScene.ts`
+  - Add an XP text HUD element (top-left under sound/combat), initialize at `XP: 0`.
+  - Listen to `game:xp-changed` and update `currentXp` and the text (e.g., `XP: 30`).
+- `src/game/scenes/SkillSpaceScene.ts`
+  - In `handleLaserEnemyOverlap(...)`, after confirming `!enemy.getData('isDead')`, emit `game:xp-changed` with `amount: 10` and a running `total` held locally or passed through.
+  - Ensure only a single emit per enemy by leveraging the existing `isDead` guard.
+- `src/game/GameEventBridge.ts`
+  - No code change required (event system is generic), but used by both scene and UI.
+
+#### Implementation Steps
+1) Types
+   - Update `GameEvents` to include `game:xp-changed`.
+2) UI Overlay
+   - In `GameUIScene`, add `xpText` element and local `currentXp` state; set to 0 on scene boot.
+   - Listen to `game:xp-changed` and update `currentXp` and the text (e.g., `XP: 30`).
+3) Award on Kill
+   - In `SkillSpaceScene.handleLaserEnemyOverlap`, when removing the enemy (after the `isDead` flag is set), emit `game:xp-changed` with `amount: 10` and computed `total` (scene can track a local `xpTotal` and also emit).
+4) Duplicate Protection
+   - Rely on existing `enemy.setData('isDead', true)` to guard against double-awards when multiple lasers hit the same frame.
+5) Initialization/Reset
+   - Reset XP to 0 when `GameUIScene` starts or when `SkillSpaceScene` starts (choose one; default: `GameUIScene`).
+6) Optional polish
+   - Small scale/color tween on `xpText` when XP increases.
+
+#### Potential Challenges
+- Multiple lasers colliding with the same enemy in a single frame: handled by `isDead` guard and awarding after the flag is set.
+- Cross-scene consistency: start with per-session XP in `GameUIScene`; persistence or per-scene tallies can be a future feature.
+
+#### Testing Strategy
+- Kill a single enemy: XP increments by +10; UI reads `XP: 10`.
+- Kill multiple enemies quickly: increments correctly with no duplicate awards.
+- Toggle Combat OFF: no XP changes while enemies are not being destroyed.
+- Hot reload safety: ensure listeners reattach cleanly without doubling.
+
+#### Success Criteria
+- Clean TypeScript build; no runtime errors.
+- XP visible in UI and reliably increments by 10 per enemy destroyed.
+- No duplicate XP grants for a single enemy.
+
+**Status**: PLANNING COMPLETE — Ready for Implementation
+**Next Mode**: IMPLEMENT MODE
+
 ### 🛡️ New Feature: Space Station Force Shields ✅ IMPLEMENTATION COMPLETE
 - [x] **CREATIVE PHASE**: Force shield system design and mechanics planning ✅
 - **Goal**: Add defensive shields to space stations that block lasers but allow ship docking

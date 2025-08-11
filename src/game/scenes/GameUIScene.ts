@@ -10,6 +10,8 @@ export class GameUIScene extends Phaser.Scene {
   private skipButton!: Phaser.GameObjects.Text
   private currentSceneText!: Phaser.GameObjects.Text
   private combatButton!: Phaser.GameObjects.Text
+  private xpText!: Phaser.GameObjects.Text
+  private currentXp: number = 0
 
   constructor() {
     super({ key: 'GameUIScene', active: true })
@@ -71,6 +73,14 @@ export class GameUIScene extends Phaser.Scene {
     .on('pointerover', () => this.combatButton.setScale(1.1))
     .on('pointerout', () => this.combatButton.setScale(1))
 
+    // XP display (top-left, below combat)
+    this.xpText = this.add.text(20, 120, '⭐ XP: 0', {
+      fontSize: '16px',
+      color: '#ffffff',
+      backgroundColor: '#f39c12',
+      padding: { x: 10, y: 5 }
+    })
+
     // Current scene indicator (bottom-center)
     this.currentSceneText = this.add.text(width / 2, height - 30, 'Loading...', {
       fontSize: '18px',
@@ -84,7 +94,11 @@ export class GameUIScene extends Phaser.Scene {
     this.skipButton.setScrollFactor(0)
     this.soundButton.setScrollFactor(0)
     this.combatButton.setScrollFactor(0)
+    this.xpText.setScrollFactor(0)
     this.currentSceneText.setScrollFactor(0)
+
+    // Initialize XP display
+    this.updateXpDisplay()
   }
 
   private setupEventListeners(): void {
@@ -112,6 +126,11 @@ export class GameUIScene extends Phaser.Scene {
       } else if (data.key === 'combatEnabled') {
         this.updateCombatButton(data.value)
       }
+    })
+
+    // Listen for XP changes
+    gameEventBridge.onGameEvent('game:xp-changed', (data) => {
+      this.handleXpChange(data.amount, data.total)
     })
   }
 
@@ -206,6 +225,63 @@ export class GameUIScene extends Phaser.Scene {
       // Updated scene display
     } catch (error) {
       console.warn('[GameUIScene] Error updating scene text:', error)
+    }
+  }
+
+  private handleXpChange(amount: number, total: number): void {
+    this.currentXp = total
+    this.updateXpDisplay()
+    
+    // Add visual feedback for XP gain
+    if (amount > 0) {
+      this.animateXpGain(amount)
+    }
+  }
+
+  private updateXpDisplay(): void {
+    if (!this.xpText || !this.xpText.scene || !this.xpText.active) {
+      console.warn('[GameUIScene] XP text is not available, skipping update')
+      return
+    }
+
+    try {
+      this.xpText.setText(`⭐ XP: ${this.currentXp}`)
+    } catch (error) {
+      console.warn('[GameUIScene] Error updating XP text:', error)
+    }
+  }
+
+  private animateXpGain(amount: number): void {
+    if (!this.xpText || !this.xpText.scene || !this.xpText.active) return
+
+    try {
+      // Brief scale and color animation for XP gain feedback
+      this.tweens.add({
+        targets: this.xpText,
+        scaleX: { from: 1, to: 1.2 },
+        scaleY: { from: 1, to: 1.2 },
+        duration: 150,
+        yoyo: true,
+        ease: 'Back.easeOut'
+      })
+
+      // Show floating +XP text
+      const floatingText = this.add.text(this.xpText.x + 120, this.xpText.y + 10, `+${amount}`, {
+        fontSize: '14px',
+        color: '#f1c40f',
+        fontStyle: 'bold'
+      })
+
+      this.tweens.add({
+        targets: floatingText,
+        y: floatingText.y - 30,
+        alpha: { from: 1, to: 0 },
+        duration: 800,
+        ease: 'Power2.easeOut',
+        onComplete: () => floatingText.destroy()
+      })
+    } catch (error) {
+      console.warn('[GameUIScene] Error animating XP gain:', error)
     }
   }
 
