@@ -61,6 +61,11 @@ export interface EnemyAgent {
     direction: 1 | -1
     lastFlipTime: number
   }
+  ingress: {
+    active: boolean
+    path: Phaser.Math.Vector2[]
+    currentIndex: number
+  }
   health: number
   isActive: boolean
 }
@@ -243,6 +248,7 @@ export class EnemyAISystem {
       lastPerceptionCheck: 0,
       perception: { hasLOS: false, inFOV: false, inRange: false, lastSeenAt: null, lastSeenTime: 0 },
       orbit: { direction: Math.random() > 0.5 ? 1 : -1, lastFlipTime: 0 },
+      ingress: { active: false, path: [], currentIndex: 0 },
       health: enemyConfig.health,
       isActive: true
     }
@@ -268,6 +274,35 @@ export class EnemyAISystem {
       const clampedY = Phaser.Math.Clamp(spawnY, 50, this.state.scene.scale.height - 50)
 
       this.createEnemy(clampedX, clampedY)
+    }
+  }
+
+  // Spawn enemies from beyond the left side with a random path across the scene
+  spawnFromLeft(count: number = 1): void {
+    const { width, height } = this.state.scene.scale
+    for (let i = 0; i < count && this.state.agents.size < this.state.maxEnemies; i++) {
+      const spawnY = Phaser.Math.Between(60, height - 60)
+      const spawnX = -80 // off-screen left
+      const agent = this.createEnemy(spawnX, spawnY)
+
+      // Build a simple zig-zag style path moving to the right
+      const segments = 3
+      const path: Phaser.Math.Vector2[] = []
+      for (let s = 1; s <= segments; s++) {
+        const px = (width / (segments + 1)) * s + Phaser.Math.Between(-30, 30)
+        const py = Phaser.Math.Clamp(
+          spawnY + Phaser.Math.Between(-150, 150),
+          60,
+          height - 60
+        )
+        path.push(new Phaser.Math.Vector2(px, py))
+      }
+      // Final exit point beyond right edge
+      path.push(new Phaser.Math.Vector2(width + 100, Phaser.Math.Between(60, height - 60)))
+
+      agent.ingress.active = true
+      agent.ingress.path = path
+      agent.ingress.currentIndex = 0
     }
   }
 
@@ -348,17 +383,29 @@ export class EnemyAISystem {
     const playerPos = new Phaser.Math.Vector2(this.state.playerTarget.x, this.state.playerTarget.y)
     const distanceToPlayer = position.distance(playerPos)
 
-    // State transitions
-    if (distanceToPlayer < agent.config.minDistance) {
+    // If no LOS and ingress is active, follow ingress path
+    if (!agent.perception.hasLOS && agent.ingress.active && agent.ingress.path.length > 0) {
+      const waypoint = agent.ingress.path[Math.min(agent.ingress.currentIndex, agent.ingress.path.length - 1)]
+      const desired = SteeringHelpers.arrive(position, waypoint, agent.config.speed, 80)
+      if (position.distance(waypoint) < 30) {
+        agent.ingress.currentIndex++
+        if (agent.ingress.currentIndex >= agent.ingress.path.length) {
+          agent.ingress.active = false
+        }
+      }
+      return desired
+    }
+
+    // State transitions: only engage when LOS is available
+    if (distanceToPlayer < agent.config.minDistance && agent.perception.hasLOS) {
       agent.behavior = BehaviorState.EVADE
     } else if (agent.perception.hasLOS && agent.perception.inFOV) {
-      // If the enemy sees the player within its field of view, chase
-      agent.behavior = BehaviorState.SEEK
-    } else if (distanceToPlayer > agent.config.maxDistance) {
-      agent.behavior = BehaviorState.SEEK
-    } else if (distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
-      // Within engagement band but no LOS: maintain strafing movement around player area
-      agent.behavior = BehaviorState.STRAFE
+      // Engage: strafe in band, seek if far
+      if (distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
+        agent.behavior = BehaviorState.STRAFE
+      } else {
+        agent.behavior = BehaviorState.SEEK
+      }
     } else {
       agent.behavior = BehaviorState.PATROL
     }

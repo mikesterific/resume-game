@@ -660,7 +660,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyAI.setPlayerTarget(this.state.player)
     
     // Spawn initial enemies
-    this.state.enemyAI.spawnWave(2) // Start with 2 enemies
+    this.state.enemyAI.spawnFromLeft(2) // Start with 2 enemies entering from left
     
     // Lasers are fired manually when SPACE is held
     
@@ -701,6 +701,11 @@ export class SkillSpaceScene extends Phaser.Scene {
         60
       )
      })
+
+    // Provide shield manager to Enemy AI (for LOS and avoidance)
+    if (this.state.enemyAI && this.state.shieldMapManager) {
+      this.state.enemyAI.setShieldManager(this.state.shieldMapManager)
+    }
 
     // Setup controls
     this.setupControls()
