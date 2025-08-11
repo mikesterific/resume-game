@@ -1,5 +1,50 @@
 # Progress - Resume Game Implementation
 
+## Latest Major Achievement: Enemy AI Perception + Strafe/Orbit ✅ COMPLETE
+
+**Date**: January 3, 2025  
+**Feature**: EnemyAISystem — vision, strafe/orbit around hero, lead targeting  
+**Status**: Implemented and TypeScript-clean
+
+### Summary
+Enhanced enemy ships with lightweight perception and dynamic flight patterns so they can “see” the hero and engage intelligently while respecting station shields.
+
+### Key Changes Implemented
+- **Perception (FOV + LOS + Memory)**
+  - Added `sensorRange`, `fovDegrees`, periodic LOS checks (`perceptionRecheckMs`) with shield-aware sampling.
+  - Stored `lastSeenAt` and `lastSeenTime` for future investigate behaviors.
+- **New STRAFE/Orbit Behavior**
+  - Introduced `STRAFE` state that blends arrive-to-ring (`orbitRadius`) with tangential motion around the hero.
+  - Occasional orbit direction flips to avoid predictability.
+- **Shield-Aware Navigation**
+  - Pre-emptive avoidance via `ShieldMapManager.getBlockingCollision` and outward avoidance force.
+- **Lead Targeting**
+  - Enemy lasers aim using single-step lead prediction (hero velocity + projectile speed).
+- **Time-Correct Steering/Rotation**
+  - Steering acceleration and rotation rates scaled by `delta` for stability across frame rates.
+  - Physics bodies use `setMaxVelocity` to cap velocity.
+- **Scene Collision Wiring**
+  - Player laser → enemy collision handled by a lightweight per-frame check since agents aren’t stored in a Phaser Group.
+
+### Tuning Knobs
+- `sensorRange`, `fovDegrees`: how far/wide enemies “see”.
+- `orbitRadius`, `strafeSpeed`: positioning and circling speed around the hero.
+- `minDistance`, `maxDistance`: engagement band.
+- `losSampleCount`, `perceptionRecheckMs`: LOS accuracy vs performance.
+- `acceleration`, `drag`, `speed`, `turnRate`: motion feel and responsiveness.
+
+### Performance & Stability Lessons
+- **Throttle expensive checks**: LOS sampling runs on a cadence; FOV/range checks every frame are inexpensive.
+- **Avoid jitter**: Add a short cooldown (e.g., 200ms) between avoidance redirects to prevent oscillations at shield edges.
+- **Cap velocity**: `body.setMaxVelocity` keeps agents within design speed under high acceleration.
+- **Delta-based rotation**: Constrain rotation per frame using `turnRate * (delta/1000)` plus `ShortestBetween` for smooth facing.
+- **Helper scoping**: Refer to `SteeringHelpers.seek` inside `wander` to avoid `this` context pitfalls.
+
+### Potential Next Enhancements
+- **Flocking Lite**: separation to avoid clumping; optional mild alignment.
+- **Role Assignment**: pursuer/strafer/flanker roles rotated on a timer.
+- **Investigate State**: move to `lastSeenAt` when LOS is lost; timeout back to patrol.
+
 ## Latest Major Achievement: Space Station Force Shields ✅ COMPLETE
 
 **Date**: January 2, 2025  

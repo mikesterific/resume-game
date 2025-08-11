@@ -93,7 +93,7 @@ const DEFAULT_ENEMY_CONFIG: EnemyConfig = {
   patrolRadius: 150,
   avoidanceRadius: 80,
   sensorRange: 700,
-  fovDegrees: 140,
+  fovDegrees: 120,
   orbitRadius: 260,
   strafeSpeed: 100,
   losSampleCount: 6,
@@ -351,10 +351,14 @@ export class EnemyAISystem {
     // State transitions
     if (distanceToPlayer < agent.config.minDistance) {
       agent.behavior = BehaviorState.EVADE
-    } else if (agent.perception.hasLOS && distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
-      agent.behavior = BehaviorState.STRAFE
+    } else if (agent.perception.hasLOS && agent.perception.inFOV) {
+      // If the enemy sees the player within its field of view, chase
+      agent.behavior = BehaviorState.SEEK
     } else if (distanceToPlayer > agent.config.maxDistance) {
       agent.behavior = BehaviorState.SEEK
+    } else if (distanceToPlayer >= agent.config.minDistance && distanceToPlayer <= agent.config.maxDistance) {
+      // Within engagement band but no LOS: maintain strafing movement around player area
+      agent.behavior = BehaviorState.STRAFE
     } else {
       agent.behavior = BehaviorState.PATROL
     }
