@@ -117,4 +117,14 @@ createPortal(scene, portalData, onActivate) → Container
 - **Config unification for isolation**: Temporarily unify per-entity configs to remove variables during debugging; restore differentiated configs after validation.
 
 ---
+
+### QA & Testing Rituals (NEW)
+- **Run tests at task completion**: After finishing any task, run the full test suite before marking it complete.
+  - Command: `npm test`
+  - Prefer running the full suite (not just a subset) to satisfy coverage thresholds configured for scenes.
+- **Vue + Phaser testing guideline**: For Vue components that integrate Phaser, mount using `@vue/test-utils` and rely on the Phaser mock to avoid starting a real game loop.
+- **If thresholds fail**: Add or adjust tests until Jest coverage thresholds pass for files with explicit gates (e.g., scenes in `jest.config.cjs`).
+
+---
+
 *Part of Memory Bank System*
