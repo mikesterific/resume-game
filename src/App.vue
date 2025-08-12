@@ -3,9 +3,7 @@ import GameContainer from '@/components/game/GameContainer.vue'
 </script>
 
 <template>
-  <div id="app">
     <GameContainer />
-  </div>
 </template>
 
 <style>
@@ -18,7 +16,6 @@ import GameContainer from '@/components/game/GameContainer.vue'
 
 html, body {
   height: 100%;
-  overflow: hidden;
 }
 
 #app {

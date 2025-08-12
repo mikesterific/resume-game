@@ -77,11 +77,27 @@ function initializeGame(): void {
 }
 
 function handleResize(): void {
-  if (game && (game.scale as any)?.refresh) {
-    try {
-      ;(game.scale as any).refresh()
-    } catch {}
-  }
+  if (!game) return
+  const scale: any = game.scale as any
+  const config: any = game.config as any
+  const designW: number = Number(config.width) || 1920
+  const designH: number = Number(config.height) || 1080
+  const r = designW / designH
+  const wr = window.innerWidth / window.innerHeight
+
+  // Decide cover vs contain automatically to fill the limiting axis
+  const desiredMode = wr === r ? Phaser.Scale.FIT : Phaser.Scale.ENVELOP
+
+  try {
+    if (typeof scale.setMode === 'function') {
+      scale.setMode(desiredMode)
+    } else {
+      scale.mode = desiredMode
+    }
+    if (typeof scale.refresh === 'function') {
+      scale.refresh()
+    }
+  } catch {}
 }
 
 function setupEventListeners(): void {
@@ -157,18 +173,24 @@ function cleanupGame(): void {
 }
 </script>
 
-<style scoped>
+<style lang="less" >
 .game-container {
   position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
   background: #2c3e50;
+
 }
 
 .game-canvas {
   width: 100%;
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  canvas {
+    margin: 0 !important;
+  }
 }
 
 /* Ensure modals appear above the game */
