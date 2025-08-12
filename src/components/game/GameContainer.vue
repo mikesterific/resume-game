@@ -1,7 +1,9 @@
 <template>
   <div class="game-container">
     <!-- Phaser game mounts here -->
-    <div id="game-container" class="game-canvas"></div>
+    <div class="game-stage">
+      <div id="game-container" class="game-canvas"></div>
+    </div>
     
     <!-- Vue UI Overlays -->
     <ProjectModal 
@@ -156,9 +158,29 @@ function cleanupGame(): void {
   background: #2c3e50;
 }
 
+/* Ratio-preserving stage: left-aligned, vertically centered, 16:9 */
+.game-stage {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  /* Height will be computed from width via aspect-ratio */
+}
+
 .game-canvas {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+/* Ensure Phaser canvas fills the ratio box */
+.game-canvas > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Ensure modals appear above the game */
