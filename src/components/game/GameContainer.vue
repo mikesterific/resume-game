@@ -178,7 +178,6 @@ function cleanupGame(): void {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #2c3e50;
 
 }
 
