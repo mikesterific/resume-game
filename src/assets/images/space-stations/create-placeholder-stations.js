@@ -10,7 +10,6 @@ const stationConfigs = [
   { id: 'station-a-green', type: 'A', color: '#5FB85F', skill: 'Testing' },
   { id: 'station-b-orange', type: 'B', color: '#E67E22', skill: 'Architecture' },
   { id: 'station-c-purple', type: 'C', color: '#9B59B6', skill: 'Tooling' },
-  { id: 'station-e-red', type: 'E', color: '#E74C3C', skill: 'DevOps' },
   { id: 'station-b-gray', type: 'B', color: '#7F8C8D', skill: 'Security' },
   { id: 'station-d-cyan', type: 'D', color: '#1ABC9C', skill: 'AI' },
   { id: 'station-c-gold', type: 'C', color: '#F39C12', skill: 'Leadership' }

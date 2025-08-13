@@ -216,8 +216,7 @@ const sections = [
 const skillCategories = computed(() => [
   { name: 'Frontend', icon: '💻', technologies: ['Vue.js', 'React', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3'] },
   { name: 'Backend', icon: '⚙️', technologies: ['Node.js', 'Express.js', 'Python', 'PostgreSQL', 'MongoDB'] },
-  { name: 'Mobile', icon: '📱', technologies: ['React Native', 'Flutter', 'iOS', 'Android'] },
-  { name: 'DevOps', icon: '🚀', technologies: ['Docker', 'AWS', 'CI/CD', 'Kubernetes'] }
+  { name: 'Mobile', icon: '📱', technologies: ['React Native', 'Flutter', 'iOS', 'Android'] }
 ])
 
 function formatProjectType(type: string): string {

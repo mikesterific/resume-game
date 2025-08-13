@@ -76,7 +76,6 @@ export const STATION_COLOR_TINTS = {
   'green': 0x5FB85F,   // Testing
   'orange': 0xE67E22,  // Architecture
   'purple': 0x9B59B6,  // Tooling
-  'red': 0xE74C3C,     // DevOps
   'gray': 0x7F8C8D,    // Security
   'cyan': 0x1ABC9C,    // AI
   'gold': 0xF39C12     // Leadership
@@ -90,8 +89,7 @@ export const STATION_SPRITE_MAP = [
   { id: 'station-b-gray', type: 'B', color: 'gray', skill: 'Security' },
   { id: 'station-c-purple', type: 'C', color: 'purple', skill: 'Tooling' },
   { id: 'station-c-gold', type: 'C', color: 'gold', skill: 'Leadership' },
-  { id: 'station-d-cyan', type: 'D', color: 'cyan', skill: 'AI' },
-  { id: 'station-e-red', type: 'E', color: 'red', skill: 'DevOps' }
+  { id: 'station-d-cyan', type: 'D', color: 'cyan', skill: 'AI' }
 ]
 
 export function getStationSpriteConfig(stationType: 'A' | 'B' | 'C' | 'D' | 'E'): StationSpriteConfig | undefined {

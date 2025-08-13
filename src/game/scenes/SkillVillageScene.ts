@@ -76,15 +76,7 @@ const createSkillsData = (): SkillData[] => [
     category: 'ai',
     description: 'Custom RAG systems with similarity search. LLM integration in production workflows.'
   },
-  { 
-    id: 'devops', 
-    name: 'DevOps &\nNetworking', 
-    emoji: '📡', 
-    x: 800, 
-    y: 480, 
-    category: 'devops',
-    description: 'Git mastery, CIDR, VLANs, merge automation. Network knowledge from dev perspective.'
-  },
+
   { 
     id: 'security', 
     name: 'Security &\nAccessibility', 

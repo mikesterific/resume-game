@@ -129,19 +129,7 @@ const createSpaceStationsData = (): SpaceStationData[] => [
     sector: 'infrastructure',
     description: 'Vite, Webpack, TypeScript expert. Custom component libraries and mono repos.'
   },
-  { 
-    id: 'devops-station', 
-    skillId: 'devops',
-    name: 'DevOps\nCommand', 
-    emoji: '📡', 
-    x: 1000, 
-    y: 820, 
-    category: 'devops',
-    stationType: 'E',
-    colorVariant: 'red',
-    sector: 'infrastructure',
-    description: 'Git mastery, CIDR, VLANs, merge automation. Network knowledge from dev perspective.'
-  },
+
   { 
     id: 'security-station', 
     skillId: 'security',
@@ -215,7 +203,6 @@ const getStarbaseImage = (skillId: string): string => {
     'testing': 'starbase2', 
     'architecture': 'starbase3',
     'tooling': 'starbase4',
-    'devops': 'starbase5',
     'security': 'starbase6',
     'ai': 'starbase7',
     'leadership': 'starbase8'
@@ -379,33 +366,11 @@ const setupSpaceBackground = (scene: Phaser.Scene): void => {
     color: '#BDC3C7'
   }).setOrigin(0.5)
 
-  // Sector labels - enhanced antialiasing
-  scene.add.text(200, 180, 'DEVELOPMENT SECTOR', {
-    fontSize: '20px',
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-    color: '#3498DB',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5)
+ 
 
-  scene.add.text(800, 180, 'INFRASTRUCTURE SECTOR', {
-    fontSize: '20px',
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-    color: '#E74C3C',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5)
+ 
 
-  scene.add.text(500, 120, 'INNOVATION HUB', {
-    fontSize: '20px',
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-    color: '#F39C12',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 2
-  }).setOrigin(0.5)
+ 
 }
 
 // Utility to generate a simple glowing laser texture if not already present
@@ -834,7 +799,7 @@ export class SkillSpaceScene extends Phaser.Scene {
             
             // Award XP for successful docking
             this.xpTotal += 50
-            this.updateXpUI()
+            // this.updateXpUI()
             this.animateXpGain(50)
             
             // Also emit event for GameUIScene
@@ -1057,7 +1022,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 3
     }).setDepth(100)
-    this.updateXpUI()
+    // this.updateXpUI()
   }
 
   update(): void {
@@ -1218,7 +1183,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.xpTotal += 10
     
     // Update in-scene XP display
-    this.updateXpUI()
+    // this.updateXpUI()
     this.animateXpGain(10)
     
     // Also emit event for GameUIScene (if it's working)
@@ -1290,10 +1255,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.healthText.setText(`Health: ${this.state.playerHealth}/${this.state.maxPlayerHealth}`)
   }
 
-  private updateXpUI(): void {
-    if (!this.xpText) return
-    this.xpText.setText(`XP: ${this.xpTotal}`)
-  }
+  // private updateXpUI(): void {
+  //   if (!this.xpText) return
+  //   this.xpText.setText(`XP: ${this.xpTotal}`)
+  // }
 
   private animateXpGain(amount: number): void {
     if (!this.xpText) return

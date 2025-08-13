@@ -124,7 +124,6 @@ const skillCategories = computed(() => {
     { name: 'Frontend', skills: ['Vue.js', 'React', 'TypeScript', 'JavaScript', 'HTML5', 'CSS3'] },
     { name: 'Backend', skills: ['Node.js', 'Express.js', 'Python', 'PostgreSQL', 'MongoDB'] },
     { name: 'Mobile', skills: ['React Native', 'Flutter', 'iOS', 'Android'] },
-    { name: 'DevOps', skills: ['Docker', 'AWS', 'CI/CD', 'Kubernetes'] },
     { name: 'Tools', skills: ['Git', 'Figma', 'Jest', 'Webpack', 'Vite'] }
   ]
   return categories

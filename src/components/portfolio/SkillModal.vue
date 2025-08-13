@@ -106,7 +106,6 @@ export default defineComponent({
         architecture: ['dell-home-live', 'ea-support-site', 'portfolio-quest'],
         tooling: ['portfolio-quest'],
         ai: [],
-        devops: [],
         security: [],
         leadership: ['dell-home-live', 'ea-support-site'],
       }
@@ -145,7 +144,6 @@ export default defineComponent({
         architecture: 'Architecture & State Management',
         tooling: 'Build Tools & Development',
         ai: 'AI & Machine Learning',
-        devops: 'DevOps & Networking',
         security: 'Security & Accessibility',
         leadership: 'Thought Leadership',
       }

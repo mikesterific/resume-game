@@ -948,3 +948,116 @@ All planning criteria have been met:
 
 **Status**: ✅ READY FOR USER TESTING
 **Manual Testing**: Toggle button in upper-right, localStorage persistence, spawn/despawn behavior
+
+### 🗑️ LEVEL 2 TASK: Remove DevOps Command Space Station — PLANNING
+
+**Complexity**: Level 2 (Simple Enhancement)
+**Goal**: Remove the DevOps Command space station and its associated skill data from the portfolio
+
+#### Overview of Changes
+- Remove DevOps space station configuration from station data system
+- Remove DevOps skill from portfolio skills data
+- Clean up any references in scene creation logic
+- Ensure remaining stations continue to function normally
+
+#### Files to Modify
+**Core Configuration Files:**
+- `src/assets/images/space-stations/station-data.ts`
+  - Remove DevOps station configuration (lines 60-68)
+  - Remove 'red' color reference and DevOps comment from palette
+- `src/game/scenes/SkillSpaceScene.ts` 
+  - Remove DevOps station from `createSpaceStationsData()` function (lines 133-144)
+  - Remove 'devops': 'starbase5' mapping reference
+- `src/data/portfolio.ts`
+  - Remove DevOps skill from skills array (lines 135-141)
+
+**Type Definitions:**
+- `src/types/game.ts`
+  - Remove 'devops' from skill category type union
+
+**UI Components:**
+- `src/components/portfolio/SkillModal.vue`
+  - Remove DevOps skill modal mapping references
+- `src/components/portfolio/ResumeModal.vue`
+  - Remove DevOps skills section
+- `src/components/portfolio/TraditionalPortfolio.vue`
+  - Remove DevOps technology section
+
+**Asset Generation Files:**
+- `src/assets/images/space-stations/create-placeholder-stations.js`
+  - Remove station-e-red DevOps configuration
+- `src/assets/images/space-stations/sprite-map-config.ts`
+  - Remove red color DevOps mapping and references
+
+**Legacy Files (if still present):**
+- `src/game/scenes/SkillVillageScene.ts`
+  - Remove any remaining DevOps skill references
+
+#### Implementation Steps
+1) **Core Configuration Cleanup** (15 min)
+   - Remove 'devops-station' entry from `spaceStationConfigs` array in station-data.ts
+   - Remove 'red' color reference and DevOps comment from `stationColorPalette`
+   - Remove DevOps station object from `createSpaceStationsData()` in SkillSpaceScene.ts
+   - Remove 'devops': 'starbase5' mapping reference
+   - Remove DevOps skill object from skills array in portfolio.ts
+
+2) **Type System Updates** (5 min)
+   - Remove 'devops' from skill category type union in types/game.ts
+   - Ensure TypeScript compilation passes with updated types
+
+3) **UI Component Cleanup** (15 min)
+   - Remove DevOps skill modal mapping references in SkillModal.vue
+   - Remove DevOps skills section from ResumeModal.vue
+   - Remove DevOps technology section from TraditionalPortfolio.vue
+   - Ensure remaining skills display correctly in all UI components
+
+4) **Asset System Cleanup** (10 min)
+   - Remove station-e-red DevOps configuration from create-placeholder-stations.js
+   - Remove red color DevOps mapping from sprite-map-config.ts
+   - Clean up any legacy DevOps references in SkillVillageScene.ts
+
+5) **Testing and Verification** (15 min)
+   - Build compiles with zero TypeScript errors
+   - Skill Space scene loads with 7 stations instead of 8
+   - All remaining stations are clickable and open modals correctly
+   - Infrastructure sector shows tooling and security stations only
+   - Traditional portfolio view doesn't show DevOps section
+   - Resume modal doesn't reference DevOps skills
+   - No console errors or broken references
+
+#### Potential Challenges
+- **Comprehensive Reference Cleanup**: Ensuring all 10+ files are properly cleaned of DevOps references
+- **Type System Integrity**: Maintaining TypeScript type safety after removing 'devops' from category union
+- **UI Component Dependencies**: Verifying that removing DevOps doesn't break layout or functionality in modals
+- **Asset System Consistency**: Ensuring color mappings and sprite configurations remain valid
+- **Shield Systems**: Verifying shield systems don't break with one fewer station
+- **Progression System**: Ensuring unlock/completion logic handles reduced station count correctly
+- **Testing Coverage**: Some existing tests may expect 8 stations and need updates
+
+**Estimated Total Time**: ~60 minutes (up from original 35 minutes due to expanded scope)
+
+#### Success Criteria
+- **Build Quality**: Clean TypeScript build with no errors or warnings
+- **Game Functionality**: Game loads successfully with 7 space stations (down from 8)
+- **Infrastructure Sector**: Contains only Tooling and Security stations
+- **Station Operations**: All remaining stations function normally (docking, modals, shields)
+- **UI Components**: Traditional portfolio and resume modals show no DevOps sections
+- **Type Safety**: All skill category references work correctly without 'devops'
+- **Asset System**: Color mappings and sprite configurations remain consistent
+- **Progression**: XP system and unlock mechanics work with reduced station count
+- **No Regressions**: No console errors, broken references, or visual glitches
+
+#### Technology Stack
+- TypeScript/JavaScript (existing configuration files)
+- Phaser.js (existing scene management)
+- Vue.js (existing portfolio data integration)
+
+#### Testing Strategy
+- Manual visual inspection of Skill Space scene
+- Verify station count in game matches configuration
+- Test docking and modal functionality on remaining stations
+- Confirm shield systems work correctly
+- Check progression system handles new total station count
+
+**Status**: PLANNING COMPLETE
+**Next Mode**: IMPLEMENT MODE

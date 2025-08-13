@@ -56,16 +56,7 @@ export const spaceStationConfigs: SpaceStationConfig[] = [
     size: { width: 80, height: 80 },
     description: 'Tooling Platform'
   },
-  {
-    id: 'devops-station',
-    skillId: 'devops',
-    stationType: 'E',
-    colorVariant: 'red',
-    sector: 'infrastructure',
-    position: { x: 800, y: 450 },
-    size: { width: 80, height: 80 },
-    description: 'DevOps Command'
-  },
+
   {
     id: 'security-station',
     skillId: 'security',
@@ -106,7 +97,7 @@ export const stationColorPalette = {
   green: '#5FB85F',    // Testing
   orange: '#E67E22',   // Architecture
   purple: '#9B59B6',   // Tooling
-  red: '#E74C3C',      // DevOps
+
   gray: '#7F8C8D',     // Security
   cyan: '#1ABC9C',     // AI
   gold: '#F39C12'      // Leadership

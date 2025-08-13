@@ -10,8 +10,6 @@ export class GameUIScene extends Phaser.Scene {
   private skipButton!: Phaser.GameObjects.Text
   private currentSceneText!: Phaser.GameObjects.Text
   private combatButton!: Phaser.GameObjects.Text
-  private xpText!: Phaser.GameObjects.Text
-  private currentXp: number = 0
   private combatToggleButton!: Phaser.GameObjects.Text
   private combatEnabled: boolean = false
 
@@ -143,11 +141,7 @@ export class GameUIScene extends Phaser.Scene {
     .on('pointerout', () => this.combatButton.setScale(1))
 
     // XP display (top-left, below combat)
-    this.xpText = this.add.text(20, 70, '⭐ XP: 0', {
-      fontSize: '16px',
-      color: '#ffffff',
-      padding: { x: 10, y: 5 }
-    })
+    // Removed XP display
 
     // Current scene indicator (bottom-center)
     this.currentSceneText = this.add.text(width / 2, height - 30, 'Loading...', {
@@ -162,7 +156,6 @@ export class GameUIScene extends Phaser.Scene {
     this.combatToggleButton.setScrollFactor(0).setDepth(10000)
     this.soundButton.setScrollFactor(0).setDepth(10000)
     this.combatButton.setScrollFactor(0).setDepth(10000)
-    this.xpText.setScrollFactor(0).setDepth(10000)
     this.currentSceneText.setScrollFactor(0).setDepth(10000)
 
     // Debug log to verify combat toggle button creation
@@ -174,8 +167,7 @@ export class GameUIScene extends Phaser.Scene {
       active: this.combatToggleButton.active
     })
 
-    // Initialize XP display
-    this.updateXpDisplay()
+    // XP display removed
   }
 
   private getCombatButtonText(): string {
@@ -222,7 +214,7 @@ export class GameUIScene extends Phaser.Scene {
 
     try {
       this.combatToggleButton.setText(this.getCombatButtonText())
-      // this.combatToggleButton.setStyle({ backgroundColor: this.getCombatButtonColor() })
+      this.combatToggleButton.setStyle({ backgroundColor: this.getCombatButtonColor() })
     } catch (error) {
       console.warn('[GameUIScene] Error updating combat toggle button:', error)
     }
@@ -255,10 +247,7 @@ export class GameUIScene extends Phaser.Scene {
       }
     })
 
-    // Listen for XP changes
-    gameEventBridge.onGameEvent('game:xp-changed', (data) => {
-      this.handleXpChange(data.amount, data.total)
-    })
+    // XP change listener removed
 
     // Show a subtle toast when all stations are unlocked
     gameEventBridge.onGameEvent('game:progress-complete', (data) => {
@@ -378,62 +367,7 @@ export class GameUIScene extends Phaser.Scene {
     }
   }
 
-  private handleXpChange(amount: number, total: number): void {
-    this.currentXp = total
-    this.updateXpDisplay()
-    
-    // Add visual feedback for XP gain
-    if (amount > 0) {
-      this.animateXpGain(amount)
-    }
-  }
-
-  private updateXpDisplay(): void {
-    if (!this.xpText || !this.xpText.scene || !this.xpText.active) {
-      console.warn('[GameUIScene] XP text is not available, skipping update')
-      return
-    }
-
-    try {
-      this.xpText.setText(`⭐ XP: ${this.currentXp}`)
-    } catch (error) {
-      console.warn('[GameUIScene] Error updating XP text:', error)
-    }
-  }
-
-  private animateXpGain(amount: number): void {
-    if (!this.xpText || !this.xpText.scene || !this.xpText.active) return
-
-    try {
-      // Brief scale and color animation for XP gain feedback
-      this.tweens.add({
-        targets: this.xpText,
-        scaleX: { from: 1, to: 1.2 },
-        scaleY: { from: 1, to: 1.2 },
-        duration: 150,
-        yoyo: true,
-        ease: 'Back.easeOut'
-      })
-
-      // Show floating +XP text
-      const floatingText = this.add.text(this.xpText.x + 120, this.xpText.y + 10, `+${amount}`, {
-        fontSize: '14px',
-        color: '#f1c40f',
-        fontStyle: 'bold'
-      })
-
-      this.tweens.add({
-        targets: floatingText,
-        y: floatingText.y - 30,
-        alpha: { from: 1, to: 0 },
-        duration: 800,
-        ease: 'Power2.easeOut',
-        onComplete: () => floatingText.destroy()
-      })
-    } catch (error) {
-      console.warn('[GameUIScene] Error animating XP gain:', error)
-    }
-  }
+  // XP-related methods removed
 
   update(): void {
     // Handle any continuous UI updates here

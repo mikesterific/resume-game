@@ -131,14 +131,7 @@ export const portfolioData = {
       icon: '🧠',
       description: 'Developed custom RAG systems with similarity search and best-practices enrichment. Uses LLMs to generate, iterate, and refine test cases and documentation. AI-integration into dev workflow is deployed, not theoretical.'
     },
-    {
-      id: 'devops',
-      name: 'DevOps & Networking',
-      category: 'devops' as const,
-      level: 4,
-      icon: '📡',
-      description: 'Knows networking from a dev perspective (CIDR, HomeKit security, Asus routers, VLANs). Fluent in Git, branching strategies, merge automation, and version hygiene.'
-    },
+
     {
       id: 'security',
       name: 'Security & Accessibility',
