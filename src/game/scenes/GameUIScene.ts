@@ -12,27 +12,70 @@ export class GameUIScene extends Phaser.Scene {
   private combatButton!: Phaser.GameObjects.Text
   private xpText!: Phaser.GameObjects.Text
   private currentXp: number = 0
+  private combatToggleButton!: Phaser.GameObjects.Text
+  private combatEnabled: boolean = false
 
   constructor() {
     super({ key: 'GameUIScene', active: true })
+    console.log('🏗️ GameUIScene constructor called')
   }
 
   create(): void {
+    console.log('🚀 GameUIScene.create() called - starting UI scene initialization')
+    console.log('🚀 Scene key:', this.scene.key)
+    console.log('🚀 Scene active:', this.scene.isActive())
+    console.log('🚀 Scene visible:', this.scene.isVisible())
+    
+    // Initialize combat setting from localStorage
+    this.initializeCombatSetting()
+    console.log('⚙️ Combat setting initialized:', this.combatEnabled)
+    
     // Initialize UI overlay
-    
     this.setupUI()
-    this.setupEventListeners()
+    console.log('🎨 UI setup completed')
     
-    // Start with the Skills Command Center
-    this.scene.start('SkillSpaceScene')
+    this.setupEventListeners()
+    console.log('👂 Event listeners setup completed')
+    
+    // Broadcast initial combat setting before starting scenes
+    this.broadcastCombatSetting()
+    console.log('📡 Combat setting broadcasted')
+    
+    // Start Skills Command Center in parallel so this UI scene stays active
+    this.scene.launch('SkillSpaceScene')
+    // Ensure UI scene renders above gameplay scene
+    try {
+      this.scene.moveAbove('GameUIScene', 'SkillSpaceScene')
+      this.scene.bringToTop()
+      console.log('⬆️ Brought GameUIScene to top of render list')
+    } catch (err) {
+      console.warn('Could not adjust scene order:', err)
+    }
     this.updateCurrentSceneDisplay('SkillSpaceScene')
+    console.log('🎮 SkillSpaceScene started')
     
     // Emit game event for initial scene
     gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: 'SkillSpaceScene' })
+    console.log('✅ GameUIScene initialization complete')
+  }
+
+  private initializeCombatSetting(): void {
+    // Read combat setting from localStorage, default to false for professional presentations
+    const stored = localStorage.getItem('portfolioQuest_combatEnabled')
+    this.combatEnabled = stored ? JSON.parse(stored) : false
+  }
+
+  private broadcastCombatSetting(): void {
+    // Emit the initial combat setting so scenes can configure accordingly
+    gameEventBridge.emitGameEvent('ui:setting-changed', {
+      key: 'combatEnabled',
+      value: this.combatEnabled
+    })
   }
 
   private setupUI(): void {
     const { width, height } = this.scale
+    console.log('🎨 setupUI called with dimensions:', width, 'x', height)
 
     // Skip Game button (top-right)
     this.skipButton = this.add.text(width - 20, 20, 'Skip Game', {
@@ -49,11 +92,37 @@ export class GameUIScene extends Phaser.Scene {
     .on('pointerover', () => this.skipButton.setScale(1.1))
     .on('pointerout', () => this.skipButton.setScale(1))
 
+    // Combat Toggle button (top-right, below Skip Game)
+    try {
+      
+      this.combatToggleButton = this.add.text(width - 20, 70, this.getCombatButtonText(), {
+        fontSize: '24px', // Even larger
+        color: '#ffffff',
+        padding: { x: 15, y: 10 },
+      })
+      .setOrigin(1, 0)
+      .setDepth(10000) // Set high depth immediately
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        console.log('🎮 Combat toggle button clicked!')
+        this.toggleCombatSetting()
+      })
+      .on('pointerover', () => {
+        console.log('🎮 Hovering over combat toggle button')
+        this.combatToggleButton.setScale(1)
+      })
+      .on('pointerout', () => this.combatToggleButton.setScale(1))
+      
+      console.log('✅ Combat toggle button created successfully')
+      
+    } catch (error) {
+      console.error('❌ Error creating combat toggle button:', error)
+    }
+
     // Sound toggle button (top-left)
     this.soundButton = this.add.text(20, 20, '🔊 Sound: ON', {
       fontSize: '16px',
       color: '#ffffff',
-      backgroundColor: '#34495e',
       padding: { x: 10, y: 5 }
     })
     .setInteractive({ useHandCursor: true })
@@ -61,23 +130,22 @@ export class GameUIScene extends Phaser.Scene {
     .on('pointerover', () => this.soundButton.setScale(1.1))
     .on('pointerout', () => this.soundButton.setScale(1))
 
-    // Combat toggle button (top-left, below sound)
+    // Combat toggle button (top-left, below sound) - DEPRECATED, keeping for compatibility
     this.combatButton = this.add.text(20, 70, '⚔️ Combat: ON', {
       fontSize: '16px',
       color: '#ffffff',
-      backgroundColor: '#e74c3c',
       padding: { x: 10, y: 5 }
     })
+    .setVisible(false) // Hide the old combat button
     .setInteractive({ useHandCursor: true })
     .on('pointerdown', () => this.toggleCombat())
     .on('pointerover', () => this.combatButton.setScale(1.1))
     .on('pointerout', () => this.combatButton.setScale(1))
 
     // XP display (top-left, below combat)
-    this.xpText = this.add.text(20, 120, '⭐ XP: 0', {
+    this.xpText = this.add.text(20, 70, '⭐ XP: 0', {
       fontSize: '16px',
       color: '#ffffff',
-      backgroundColor: '#f39c12',
       padding: { x: 10, y: 5 }
     })
 
@@ -85,20 +153,79 @@ export class GameUIScene extends Phaser.Scene {
     this.currentSceneText = this.add.text(width / 2, height - 30, 'Loading...', {
       fontSize: '18px',
       color: '#ecf0f1',
-      backgroundColor: '#2c3e50aa',
       padding: { x: 15, y: 8 }
     })
     .setOrigin(0.5, 1)
 
     // Make UI elements stay in fixed positions
-    this.skipButton.setScrollFactor(0)
-    this.soundButton.setScrollFactor(0)
-    this.combatButton.setScrollFactor(0)
-    this.xpText.setScrollFactor(0)
-    this.currentSceneText.setScrollFactor(0)
+    this.skipButton.setScrollFactor(0).setDepth(10000)
+    this.combatToggleButton.setScrollFactor(0).setDepth(10000)
+    this.soundButton.setScrollFactor(0).setDepth(10000)
+    this.combatButton.setScrollFactor(0).setDepth(10000)
+    this.xpText.setScrollFactor(0).setDepth(10000)
+    this.currentSceneText.setScrollFactor(0).setDepth(10000)
+
+    // Debug log to verify combat toggle button creation
+    console.log('🎮 Combat toggle button created:', {
+      x: this.combatToggleButton.x,
+      y: this.combatToggleButton.y,
+      text: this.combatToggleButton.text,
+      visible: this.combatToggleButton.visible,
+      active: this.combatToggleButton.active
+    })
 
     // Initialize XP display
     this.updateXpDisplay()
+  }
+
+  private getCombatButtonText(): string {
+    return this.combatEnabled ? '⚔️ Enemies: ON' : '🛡️ Enemies: OFF'
+  }
+
+  private getCombatButtonColor(): string {
+    return this.combatEnabled ? '#e74c3c' : '#95a5a6'
+  }
+
+  private toggleCombatSetting(): void {
+    // Safety check to prevent errors during hot reload
+    if (!this.combatToggleButton || !this.combatToggleButton.scene || !this.combatToggleButton.active) {
+      console.warn('[GameUIScene] Combat toggle button is not available, skipping toggle')
+      return
+    }
+
+    try {
+      // Toggle the setting
+      this.combatEnabled = !this.combatEnabled
+      
+      // Persist to localStorage
+      localStorage.setItem('portfolioQuest_combatEnabled', JSON.stringify(this.combatEnabled))
+      
+      // Update button appearance
+      this.updateCombatToggleButton()
+      
+      // Broadcast the change
+      gameEventBridge.emitGameEvent('ui:setting-changed', {
+        key: 'combatEnabled',
+        value: this.combatEnabled
+      })
+    } catch (error) {
+      console.warn('[GameUIScene] Error toggling combat setting:', error)
+    }
+  }
+
+  private updateCombatToggleButton(): void {
+    // Safety check to prevent errors during hot reload
+    if (!this.combatToggleButton || !this.combatToggleButton.scene || !this.combatToggleButton.active) {
+      console.warn('[GameUIScene] Combat toggle button is not available, skipping update')
+      return
+    }
+
+    try {
+      this.combatToggleButton.setText(this.getCombatButtonText())
+      // this.combatToggleButton.setStyle({ backgroundColor: this.getCombatButtonColor() })
+    } catch (error) {
+      console.warn('[GameUIScene] Error updating combat toggle button:', error)
+    }
   }
 
   private setupEventListeners(): void {

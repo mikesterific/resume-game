@@ -34,6 +34,7 @@ interface SceneState {
   shields: Phaser.GameObjects.Group | null
   shieldMapManager: ShieldMapManager | null
   enemyAI: EnemyAISystem | null
+  combatEnabled: boolean
   unlockedStations?: Set<string>
   undockSpawnedForStation?: Set<string>
   totalStationCount?: number
@@ -581,7 +582,8 @@ export class SkillSpaceScene extends Phaser.Scene {
     isPlayerInvulnerable: false,
     shields: null,
     shieldMapManager: null,
-    enemyAI: null
+    enemyAI: null,
+    combatEnabled: false
   }
 
   private xpTotal: number = 0
@@ -683,8 +685,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyAI.initialize(this.state.enemyLasers)
     this.state.enemyAI.setPlayerTarget(this.state.player)
     
-    // Spawn initial enemies offscreen from the left side
-    this.state.enemyAI.spawnFromLeft(2)
+    // Only spawn initial enemies if combat is enabled
+    if (this.state.combatEnabled) {
+      this.state.enemyAI.spawnFromLeft(2)
+    }
     
     // Lasers are fired manually when SPACE is held
     
@@ -884,8 +888,8 @@ export class SkillSpaceScene extends Phaser.Scene {
       this.state.interactionPrompt.setVisible(false)
     }
 
-    // Spawn +3 enemies once per unlocked station upon first undock
-    if (lastStation && this.state.enemyAI) {
+    // Spawn +3 enemies once per unlocked station upon first undock (only if combat enabled)
+    if (lastStation && this.state.enemyAI && this.state.combatEnabled) {
       const stationData = lastStation.getData('stationData')
       const stationId = stationData?.id as string | undefined
       const alreadySpawned = stationId && this.state.undockSpawnedForStation?.has(stationId)
@@ -983,8 +987,27 @@ export class SkillSpaceScene extends Phaser.Scene {
 
     // Listen for combat toggle
     gameEventBridge.onGameEvent('ui:setting-changed', (data) => {
-      if (data.key === 'combatEnabled' && this.state.enemyAI) {
-        this.state.enemyAI.setCombatEnabled(data.value)
+      if (data.key === 'combatEnabled') {
+        const newCombatState = data.value as boolean
+        const previousState = this.state.combatEnabled
+        this.state.combatEnabled = newCombatState
+        
+        if (this.state.enemyAI) {
+          this.state.enemyAI.setCombatEnabled(newCombatState)
+          
+          if (newCombatState && !previousState) {
+            // Combat turned ON: spawn enemies if none exist
+            if (this.state.enemyAI.getEnemyCount() === 0) {
+              this.state.enemyAI.spawnFromLeft(2)
+            }
+          } else if (!newCombatState && previousState) {
+            // Combat turned OFF: despawn all enemies and clear enemy lasers
+            this.state.enemyAI.despawnAll()
+            if (this.state.enemyLasers) {
+              this.state.enemyLasers.clear(true, true)
+            }
+          }
+        }
       }
     })
   }
@@ -1509,7 +1532,8 @@ export class SkillSpaceScene extends Phaser.Scene {
         delay: SkillSpaceScene.ENEMY_COLLISION_CHECK_INTERVAL_MS, // Check every frame (roughly 60 FPS)
         loop: true,
         callback: () => {
-          if (!this.state.lasers || !this.state.enemyAI) return
+          // Skip collision detection when combat is disabled
+          if (!this.state.combatEnabled || !this.state.lasers || !this.state.enemyAI) return
           
           const activeEnemies = this.state.enemyAI.getActiveAgents()
           this.state.lasers.children.each((laserObj: Phaser.GameObjects.GameObject) => {
