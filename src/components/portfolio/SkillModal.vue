@@ -5,20 +5,7 @@
 
       <div class="hud-container">
         <!-- Radar -->
-        <div class="radar">
-          <div class="circle circle1"></div>
-          <div class="circle circle2"></div>
-          <div class="circle circle3"></div>
-          <div class="circle circle4"></div>
-          <div class="crosshair vertical"></div>
-          <div class="crosshair horizontal"></div>
-          <div
-            v-for="blip in radarBlips"
-            :key="blip.key"
-            class="blip"
-            :style="{ top: '50%', left: '50%', transform: `translate(-50%, -50%) translate(${blip.x}px, ${blip.y}px)` }"
-          ></div>
-        </div>
+        <RadarScreen :RadarBlip="radarBlips" />
 
         <!-- Telemetry -->
         <div class="telemetry">
@@ -83,9 +70,27 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import type { SkillData } from '@/types/game'
+import type { SkillData, ProjectData } from '@/types/game'
 import gameEventBridge from '@/game/GameEventBridge'
-import { useRadarSystem } from '@/composables/useRadarSystem'
+import { portfolioData } from '@/data/portfolio'
+import RadarScreen from '@/components/portfolio/RadarScreen.vue'
+
+interface RadarBlip {
+  x: number;
+  y: number;
+  key: string;
+}
+
+// Category to project mapping for related projects lookup
+const CATEGORY_PROJECT_MAP: Record<string, string[]> = {
+  frontend: ['portfolio-quest', 'dell-xps-poc', 'dell-xps-landing', 'dell-home-poc', 'dell-home-live', 'ea-support-site'],
+  testing: ['portfolio-quest'],
+  architecture: ['dell-home-live', 'ea-support-site', 'portfolio-quest'],
+  tooling: ['portfolio-quest'],
+  ai: [],
+  security: [],
+  leadership: ['dell-home-live', 'ea-support-site'],
+}
 
 export default defineComponent({
   name: 'SkillModal',
@@ -93,19 +98,36 @@ export default defineComponent({
     skill: { type: Object as () => SkillData | null, default: null },
   },
   emits: ['close'],
-  setup(props) {
-    // Use the radar system composable
-    const {
-      radarTelemetry,
-      getSkillProjects,
-      getSkillTechnologies,
-      generateRadarBlips,
-    } = useRadarSystem()
+  components: { RadarScreen },
+  data() {
+    return {
+      radarTelemetry: {
+        vector: 0.2,
+        stationHealth: 92,
+      }
+    }
+  },
+  computed: {
+    radarBlips() {
+      
+      
+    }
+  },
+  methods: {
+    getRelatedProjects(category?: string): ProjectData[] {
+      if (!category) return []
+      const projectIds = CATEGORY_PROJECT_MAP[category] || []
+      return portfolioData.projects.filter((p) => projectIds.includes(p.id))
+    },
 
-    // Generate radar blips for the current skill
-    const radarBlips = generateRadarBlips(props.skill)
+    getTechnologiesForSkill(skill?: SkillData | null): string[] {
+      if (!skill) return []
+      const relatedProjects = this.getRelatedProjects(skill.category)
+      const technologies = relatedProjects.flatMap(p => p.technologies)
+      return Array.from(new Set(technologies)).slice(0, 10) // Dedupe and limit to 10
+    },
 
-    function formatCategory(category?: string): string {
+    formatCategory(category?: string): string {
       if (!category) return ''
       const categoryMap: Record<string, string> = {
         frontend: 'Front-End Development',
@@ -117,9 +139,9 @@ export default defineComponent({
         leadership: 'Thought Leadership',
       }
       return categoryMap[category] || category
-    }
+    },
 
-    function getLevelText(level?: number): string {
+    getLevelText(level?: number): string {
       if (!level) return 'Beginner'
       const levelMap: Record<number, string> = {
         1: 'Beginner',
@@ -129,9 +151,9 @@ export default defineComponent({
         5: 'Expert',
       }
       return levelMap[level] || 'Beginner'
-    }
+    },
 
-    function formatProjectType(type: string): string {
+    formatProjectType(type: string): string {
       const typeMap: Record<string, string> = {
         web: 'Web App',
         mobile: 'Mobile App',
@@ -139,23 +161,12 @@ export default defineComponent({
         library: 'Library',
       }
       return typeMap[type] || type
-    }
+    },
 
-    function openProject(projectId: string): void {
+    openProject(projectId: string): void {
       gameEventBridge.emitGameEvent('game:project-selected', { projectId })
     }
-
-    return {
-      radarTelemetry,
-      radarBlips,
-      formatCategory,
-      getLevelText,
-      getTechnologiesForSkill: getSkillTechnologies,
-      getRelatedProjects: getSkillProjects,
-      formatProjectType,
-      openProject,
-    }
-  },
+  }
 })
 </script>
 

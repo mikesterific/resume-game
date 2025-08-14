@@ -1150,3 +1150,233 @@ The `useRadarSystem` composable will provide:
 
 **Status**: PLANNING COMPLETE
 **Next Mode**: IMPLEMENT MODE
+
+### 🎯 LEVEL 3 TASK: Enemy Radar Integration System — PLANNING
+
+**Complexity**: Level 3 (Intermediate Feature)
+**Goal**: Create real-time enemy position display in RadarScreen component by integrating SkillSpaceScene enemy data through Vue component data flow
+
+## Requirements Analysis
+
+### Core Requirements
+- [ ] RadarScreen component displays enemy positions as blips in format `{x: number, y: number, key: string}`
+- [ ] Enemy blips update in real-time as enemies move around the game world
+- [ ] Coordinate transformation from game world (1700x900px) to radar display (260x260px)
+- [ ] Enemy blips disappear when enemies are destroyed
+- [ ] Radar updates only when SkillModal is open (performance optimization)
+
+### Technical Constraints
+- [ ] Maintain 60 FPS performance with real-time updates
+- [ ] Use existing GameEventBridge for Phaser → Vue communication
+- [ ] Preserve existing radar functionality (telemetry, visual design)
+- [ ] Fix current prop name mismatch (RadarBlip vs blips)
+- [ ] No direct Phaser → Vue component coupling
+
+### Technology Stack
+- **Framework**: Vue 3 Composition API (existing)
+- **Game Engine**: Phaser 3 (existing)
+- **Communication**: GameEventBridge event system (existing)
+- **Language**: TypeScript (existing)
+- **Build Tool**: Vite (existing)
+
+## Component Analysis
+
+### Affected Components
+
+**SkillSpaceScene.ts** (`src/game/scenes/SkillSpaceScene.ts`)
+- Changes needed:
+  - Add periodic enemy position emission (every 500ms)
+  - Extract enemy positions from EnemyAISystem
+  - Transform coordinates from game world to radar coordinates
+  - Implement cleanup when scene ends
+- Dependencies:
+  - EnemyAISystem (existing)
+  - GameEventBridge (existing)
+  - Player position for relative radar positioning
+
+**SkillModal.vue** (`src/components/portfolio/SkillModal.vue`)
+- Changes needed:
+  - Fix prop name mismatch: `RadarBlip` → `blips`
+  - Complete radarBlips computed property implementation
+  - Listen for enemy position events from GameEventBridge
+  - Manage event listener lifecycle (mount/unmount)
+- Dependencies:
+  - RadarScreen component (existing)
+  - GameEventBridge (existing)
+
+**RadarScreen.vue** (`src/components/portfolio/RadarScreen.vue`)
+- Changes needed:
+  - Verify blips prop handling is correct
+  - Ensure enemy blips render with appropriate styling
+  - Test with dynamic real-time data
+- Dependencies:
+  - None (already correctly implemented)
+
+**GameEventBridge.ts** (`src/game/GameEventBridge.ts`)
+- Changes needed:
+  - Add new event type: `'game:enemy-positions-updated'`
+  - Update TypeScript interface for event data structure
+- Dependencies:
+  - Core event system (existing)
+
+**Types Definition** (`src/types/game.ts`)
+- Changes needed:
+  - Add RadarBlip interface if not already defined
+  - Add enemy position event data interface
+  - Update GameEvents type union
+- Dependencies:
+  - Existing type definitions
+
+## Implementation Strategy
+
+### Phase 1: Fix Current Issues (15 minutes)
+1. **Prop Name Correction**
+   - [ ] Change `:RadarBlip="radarBlips"` to `:blips="radarBlips"` in SkillModal.vue
+   - [ ] Verify RadarScreen.vue expects `blips` prop correctly
+
+2. **Complete radarBlips Computed Property**
+   - [ ] Implement basic radarBlips computed property with test data
+   - [ ] Verify RadarScreen renders blips correctly
+   - [ ] Test with 2-3 static test blips
+
+### Phase 2: Event System Setup (30 minutes)
+1. **GameEventBridge Updates**
+   - [ ] Add `'game:enemy-positions-updated'` event type to interface
+   - [ ] Define event data structure: `{ enemies: Array<{id: string, x: number, y: number}> }`
+   - [ ] Update TypeScript type definitions
+
+2. **SkillSpaceScene Enemy Position Emission**
+   - [ ] Add timer to emit enemy positions every 500ms
+   - [ ] Extract enemy positions from EnemyAISystem.getActiveAgents()
+   - [ ] Transform game coordinates to radar coordinates (relative to player)
+   - [ ] Handle case when no enemies exist
+
+### Phase 3: SkillModal Integration (20 minutes)
+1. **Event Listener Setup**
+   - [ ] Add event listener for `game:enemy-positions-updated` in SkillModal
+   - [ ] Store received enemy data in reactive state
+   - [ ] Clean up event listeners on component unmount
+
+2. **Data Transformation**
+   - [ ] Transform received enemy data to RadarBlip format
+   - [ ] Update radarBlips computed property to use real enemy data
+   - [ ] Add fallback for when no enemy data is available
+
+### Phase 4: Coordinate Transformation & Polish (25 minutes)
+1. **Coordinate System Implementation**
+   - [ ] Implement game world → radar coordinate transformation
+   - [ ] Use player position as radar center (0,0)
+   - [ ] Scale enemy positions to fit within radar bounds (-130px to +130px)
+   - [ ] Handle edge cases (enemies outside radar range)
+
+2. **Polish & Testing**
+   - [ ] Add unique keys for enemy blips (use enemy IDs)
+   - [ ] Test with multiple enemies moving around
+   - [ ] Verify blips disappear when enemies are destroyed
+   - [ ] Test performance with 10+ enemies
+
+## Testing Strategy
+
+### Unit Tests
+- [ ] GameEventBridge: enemy position event emission and reception
+- [ ] SkillModal: radarBlips computed property with various enemy data inputs
+- [ ] Coordinate transformation: game coordinates → radar coordinates accuracy
+
+### Integration Tests
+- [ ] Full data flow: SkillSpaceScene → GameEventBridge → SkillModal → RadarScreen
+- [ ] Real-time updates: enemy movement reflected in radar blips
+- [ ] Event cleanup: no memory leaks when modal opens/closes repeatedly
+- [ ] Performance: 60 FPS maintained with 10+ enemies moving
+
+### Manual Testing
+- [ ] Open SkillModal and verify radar shows enemy blips
+- [ ] Move around game world and verify enemy blips update correctly
+- [ ] Destroy enemies and verify blips disappear
+- [ ] Toggle combat on/off and verify radar updates appropriately
+- [ ] Test with 0, 1, 5, and 10+ enemies
+
+## Challenges & Mitigations
+
+**Challenge 1**: Performance impact from frequent updates
+- **Mitigation**: Emit enemy positions every 500ms instead of every frame (2Hz vs 60Hz)
+
+**Challenge 2**: Coordinate transformation accuracy
+- **Mitigation**: Use player position as radar center, implement proper scaling math
+
+**Challenge 3**: Memory leaks from event listeners
+- **Mitigation**: Implement proper cleanup in Vue component lifecycle hooks
+
+**Challenge 4**: Empty state handling when no enemies exist
+- **Mitigation**: Gracefully handle empty enemy arrays, show appropriate radar state
+
+**Challenge 5**: Enemy identification for unique keys
+- **Mitigation**: Use enemy.id from EnemyAISystem for consistent blip tracking
+
+## Creative Phases Required
+
+**🏗️ Architecture Design**: Required
+- Data flow architecture between Phaser game and Vue components
+- Event timing and frequency optimization
+- Coordinate transformation system design
+
+**🎨 UI/UX Design**: Not Required
+- RadarScreen visual design already established
+- Blip styling already implemented
+
+**⚙️ Algorithm Design**: Not Required
+- Coordinate transformation is straightforward mathematical scaling
+- No complex algorithms required
+
+## Dependencies
+
+### External Dependencies
+- Phaser 3 (existing) - Enemy position data source
+- Vue 3 (existing) - Component framework for radar display
+- TypeScript (existing) - Type safety for event interfaces
+
+### Internal Dependencies
+- EnemyAISystem (existing) - Source of enemy position data
+- GameEventBridge (existing) - Communication layer
+- RadarScreen component (existing) - Display layer
+
+## Technology Validation Checkpoints
+
+- [x] Vue 3 Composition API confirmed working for reactive state management
+- [x] GameEventBridge confirmed working for Phaser → Vue communication
+- [x] EnemyAISystem confirmed providing enemy position data via getActiveAgents()
+- [x] RadarScreen component confirmed rendering blips correctly
+- [x] TypeScript compilation confirmed working for type safety
+
+## Success Criteria
+
+### Functional Requirements
+- [x] RadarScreen displays enemy blips as moving dots
+- [ ] Enemy blips update in real-time (500ms intervals)
+- [ ] Blips use format `{x: number, y: number, key: string}`
+- [ ] Blips disappear when enemies are destroyed
+- [ ] Coordinate transformation maintains relative positions
+
+### Technical Requirements
+- [ ] Clean TypeScript compilation (zero errors)
+- [ ] 60 FPS performance maintained
+- [ ] Event listeners properly cleaned up
+- [ ] No memory leaks from repeated modal open/close
+- [ ] Proper error handling for edge cases
+
+### User Experience Requirements
+- [ ] Radar provides useful tactical information
+- [ ] Real-time updates feel responsive
+- [ ] No visual glitches or jumpiness
+- [ ] Radar remains functional when no enemies present
+
+## Implementation Time Estimate
+**Total**: 90 minutes (1.5 hours)
+- Phase 1: 15 minutes (fix current issues)
+- Phase 2: 30 minutes (event system setup)
+- Phase 3: 20 minutes (SkillModal integration)
+- Phase 4: 25 minutes (coordinate transformation & polish)
+
+**Status**: ✅ PLANNING COMPLETE
+**Next Mode**: IMPLEMENT MODE
+
+---

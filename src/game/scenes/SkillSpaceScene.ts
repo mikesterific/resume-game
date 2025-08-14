@@ -578,6 +578,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Add load event listeners for debugging
       // Intentionally silent
     
+    this.load.on('filecomplete', (key: string) => {
+      console.log('✅ Loaded:', key)
+    })
+
     this.load.on('loaderror', (file: any) => {
       console.error('❌ Failed to load:', file.key, file.src)
     })
