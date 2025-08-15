@@ -1,8 +1,6 @@
 import Phaser from 'phaser'
 import gameEventBridge from '../GameEventBridge'
 import { createPlayer, updatePlayerVelocity, preloadPlayerAssets, findNearestObject } from '../systems/PlayerSystem'
-import { spaceStationConfigs, getStationConfig, stationColorPalette } from '@/assets/images/space-stations/station-data'
-import { getColorTint } from '@/assets/images/space-stations/sprite-map-config'
 import { 
   ShieldMapManager, 
   CollisionLayer, 
@@ -11,6 +9,10 @@ import {
 import type { ShieldZoneConfig } from '../systems/ShieldMappingSystem'
 import { EnemyAISystem } from '../systems/EnemyAISystem'
 import type { EnemyRadarData } from '@/types/game'
+import { SpaceStationManager, type SpaceStationData } from '../managers/SpaceStationManager'
+import { EffectsManager } from '../managers/EffectsManager'
+import { UIManager } from '../managers/UIManager'
+import { SceneConfigManager } from '../managers/SceneConfigManager'
 
 // Coordinate transformation function for radar display
 const transformToRadarCoordinates = (
@@ -64,19 +66,7 @@ interface SceneState {
   enemyPositionTimer: Phaser.Time.TimerEvent | null
 }
 
-interface SpaceStationData {
-  id: string
-  skillId: string
-  name: string
-  emoji: string
-  x: number
-  y: number
-  category: string
-  description?: string
-  stationType: 'A' | 'B' | 'C' | 'D' | 'E'
-  colorVariant: string
-  sector: 'development' | 'infrastructure' | 'innovation'
-}
+// SpaceStationData is now imported from SpaceStationManager
 
 interface ShieldConfig {
   radius: number
@@ -96,326 +86,7 @@ interface PortalData {
   targetScene: string
 }
 
-// Pure functions for scene logic - Space themed data
-const createSpaceStationsData = (): SpaceStationData[] => [
-  // DEVELOPMENT SECTOR (Western Quadrant)
-  { 
-    id: 'frontend-station', 
-    skillId: 'frontend',
-    name: 'Frontend Development\nStation', 
-    emoji: '👨‍💻', 
-    x: 1650, 
-    y: 250, 
-    category: 'frontend',
-    stationType: 'A',
-    colorVariant: 'blue',
-    sector: 'development',
-    description: 'Deep mastery of Vue.js, React, Angular. CSS3, HTML5, TailwindCSS wizard. Performance optimization expert.'
-  },
-  { 
-    id: 'testing-station', 
-    skillId: 'testing',
-    name: 'Testing Systems\nPlatform', 
-    emoji: '🧪', 
-    x: 320, 
-    y: 780, 
-    category: 'testing',
-    stationType: 'A',
-    colorVariant: 'green',
-    sector: 'development',
-    description: 'Cypress ninja, Jest, Mocha, Chai master. Writes resilient full-coverage tests.'
-  },
-  { 
-    id: 'architecture-station', 
-    skillId: 'architecture',
-    name: 'Architecture\nHub', 
-    emoji: '📦', 
-    x: 1420, 
-    y: 880, 
-    category: 'architecture',
-    stationType: 'B',
-    colorVariant: 'orange',
-    sector: 'development',
-    description: 'Vuex wizard, Supabase integration. Large-scale app architecture at EA, Dell, RentPath.'
-  },
-  
-  // INFRASTRUCTURE SECTOR (Eastern Quadrant)
-  { 
-    id: 'tooling-station', 
-    skillId: 'tooling',
-    name: 'Tooling\nPlatform', 
-    emoji: '⚙️', 
-    x: 220, 
-    y: 380, 
-    category: 'tooling',
-    stationType: 'C',
-    colorVariant: 'purple',
-    sector: 'infrastructure',
-    description: 'Vite, Webpack, TypeScript expert. Custom component libraries and mono repos.'
-  },
-
-  { 
-    id: 'security-station', 
-    skillId: 'security',
-    name: 'Security\nFortress', 
-    emoji: '🔒', 
-    x: 850, 
-    y: 520, 
-    category: 'security',
-    stationType: 'B',
-    colorVariant: 'gray',
-    sector: 'infrastructure',
-    description: 'Linux Foundation certified (LFD121). Security and accessibility by design, not bolted on.'
-  },
-  
-  // INNOVATION HUB (Northern Command Center)
-  { 
-    id: 'ai-station', 
-    skillId: 'ai',
-    name: 'AI Research\nStation', 
-    emoji: '🧠', 
-    x: 580, 
-    y: 320, 
-    category: 'ai',
-    stationType: 'D',
-    colorVariant: 'cyan',
-    sector: 'innovation',
-    description: 'Custom RAG systems with similarity search. LLM integration in production workflows.'
-  },
-  { 
-    id: 'leadership-station', 
-    skillId: 'leadership',
-    name: 'Leadership\nCenter', 
-    emoji: '🎤', 
-    x: 1120, 
-    y: 300, 
-    category: 'leadership',
-    stationType: 'C',
-    colorVariant: 'gold',
-    sector: 'innovation',
-    description: 'Google Tech Talk speaker. Published "Pro HTML5 Performance" by Apress. UI badass.'
-  }
-]
-
-const createPortalsData = (width: number, height: number): Array<PortalData & { x: number; y: number; color: number; emoji: string }> => [
-  {
-    id: 'forest',
-    name: 'Project Forest',
-    targetScene: 'ProjectForestScene',
-    x: 50,
-    y: height / 2,
-    color: 0x27ae60,
-    emoji: '🌲'
-  },
-  {
-    id: 'tower',
-    name: 'Résumé Tower',
-    targetScene: 'ResumeTowerScene',
-    x: width - 50,
-    y: height / 2,
-    color: 0x8e44ad,
-    emoji: '🏰'
-  }
-]
-
-// Factory functions for creating game objects
-
-// Map skill IDs to specific starbase images
-const getStarbaseImage = (skillId: string): string => {
-  const starbaseMapping: Record<string, string> = {
-    'frontend': 'starbase1',
-    'testing': 'starbase2', 
-    'architecture': 'starbase3',
-    'tooling': 'starbase4',
-    'security': 'starbase6',
-    'ai': 'starbase7',
-    'leadership': 'starbase8'
-  }
-  
-  return starbaseMapping[skillId] || 'starbase1' // Default fallback
-}
-
-const createSpaceStation = (scene: Phaser.Scene, station: SpaceStationData, onInteract: (stationId: string) => void): Phaser.GameObjects.Container => {
-  const stationContainer = scene.add.container(station.x, station.y)
-  
-  let stationBody: Phaser.GameObjects.Image | Phaser.GameObjects.Shape
-  
-  // Get the appropriate starbase image for this station
-  const starbaseKey = getStarbaseImage(station.skillId)
-  
-  
-  // Use individual starbase images
-  if (scene.textures.exists(starbaseKey)) {
-    
-    // Create sprite from individual starbase image
-    stationBody = scene.add.image(0, 0, starbaseKey)
-    stationBody.setDisplaySize(120, 120) // Scale to a good visible size
-    
-    // Apply color tint for category identification
-    const colorTint = getColorTint(station.colorVariant)
-    stationBody.setTint(colorTint)
-    
-    
-  } else {
-    // Fallback to geometric shape  
-    console.warn(`Starbase image ${starbaseKey} not found for station ${station.skillId}, using fallback`)
-    
-    const stationColor = stationColorPalette[station.colorVariant as keyof typeof stationColorPalette]
-    
-    switch (station.stationType) {
-      case 'A': // Compact research module
-        stationBody = scene.add.rectangle(0, 0, 70, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-        break
-      case 'B': // Industrial platform  
-        stationBody = scene.add.rectangle(0, 0, 80, 40, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-        break
-      case 'C': // Large hub station
-        stationBody = scene.add.circle(0, 0, 35, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-        break
-      case 'D': // Specialized research (hexagonal)
-        stationBody = scene.add.polygon(0, 0, [
-          [-25, 0], [-12, -22], [12, -22], [25, 0], [12, 22], [-12, 22]
-        ], Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-        break
-      case 'E': // Command station
-        stationBody = scene.add.rectangle(0, 0, 75, 45, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-        break
-      default:
-        stationBody = scene.add.rectangle(0, 0, 60, 50, Phaser.Display.Color.HexStringToColor(stationColor).color, 0.9)
-    }
-    
-    if ('setStrokeStyle' in stationBody) {
-      stationBody.setStrokeStyle(3, 0x34495E)
-    }
-  }
-  
-  // Station identifier removed - starbase images are detailed enough
-  
-  // Station label positioned below starbase - clean, no background
-  const stationLabel = scene.add.text(0, 95, station.name, { 
-    fontSize: '18px', 
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-    fontStyle: 'bold',
-    color: '#FFFFFF',
-    align: 'center',
-    stroke: '#000000',
-    strokeThickness: 3
-  }).setOrigin(0.5)
-
-  // Status indicator - gentle pulsing effect
-  const statusIndicator = scene.add.circle(25, -25, 4, 0x00FF88, 0.8)
-  scene.tweens.add({
-    targets: statusIndicator,
-    alpha: { from: 0.4, to: 1 },
-    scale: { from: 0.8, to: 1.2 },
-    duration: 2000,
-    yoyo: true,
-    repeat: -1,
-    ease: 'Sine.easeInOut'
-  })
-
-  // Docking indicators (subtle industrial details)
-  const dockingPort1 = scene.add.rectangle(-30, 0, 6, 3, 0x95A5A6)
-  const dockingPort2 = scene.add.rectangle(30, 0, 6, 3, 0x95A5A6)
-
-  stationContainer.add([stationBody, stationLabel, statusIndicator, dockingPort1, dockingPort2])
-  
-  stationContainer.setData('stationData', station)
-  stationContainer.setData('isStation', true)
-  stationContainer.setSize(80, 80)
-  stationContainer.setInteractive()
-  stationContainer.on('pointerdown', () => onInteract(station.skillId))
-  
-  return stationContainer
-}
-
-const createPortal = (
-  scene: Phaser.Scene, 
-  portalData: PortalData & { x: number; y: number; color: number; emoji: string },
-  onActivate: (sceneName: string) => void
-): Phaser.GameObjects.Container => {
-  const portal = scene.add.container(portalData.x, portalData.y)
-  
-  portal.add([
-    scene.add.rectangle(0, 0, 60, 80, portalData.color, 0.7),
-    scene.add.text(0, -10, portalData.emoji, { fontSize: '24px' }).setOrigin(0.5),
-    scene.add.text(0, 15, portalData.name.replace(' ', '\n'), { 
-      fontSize: '10px', 
-      align: 'center', 
-      color: '#ffffff' 
-    }).setOrigin(0.5)
-  ])
-  
-  scene.physics.add.existing(portal, true)
-  portal.setData('portalData', { 
-    id: portalData.id, 
-    name: portalData.name, 
-    targetScene: portalData.targetScene 
-  })
-  portal.setData('isPortal', true)
-  portal.setSize(60, 80)
-  portal.setInteractive()
-  portal.on('pointerdown', () => {
-    onActivate(portalData.targetScene)
-  })
-  
-  return portal
-}
-
-const setupSpaceBackground = (scene: Phaser.Scene): void => {
-  const { width, height } = scene.scale
-
-  // Deep space background
-  scene.add.rectangle(width / 2, height / 2, width, height, 0x0A0A1F, 1.0)
-  
-  // Add starfield
-  for (let i = 0; i < 100; i++) {
-    const x = Phaser.Math.Between(0, width)
-    const y = Phaser.Math.Between(0, height)
-    const starSize = Phaser.Math.Between(1, 3)
-    const star = scene.add.circle(x, y, starSize, 0xFFFFFF, Phaser.Math.FloatBetween(0.3, 0.9))
-  }
-  
-  // Scene title with space theme
-  scene.add.text(width / 2, 60, '🚀 Skills Command Center', {
-    fontSize: '32px',
-    color: '#ECF0F1',
-    fontStyle: 'bold'
-  }).setOrigin(0.5)
-
-  scene.add.text(width / 2, 120, 'Navigate to different stations to explore technical expertise', {
-    fontSize: '18px',
-    color: '#BDC3C7'
-  }).setOrigin(0.5)
-
- 
-
- 
-
- 
-}
-
-// Utility to generate a simple glowing laser texture if not already present
-const ensureLaserTexture = (scene: Phaser.Scene): void => {
-  if (scene.textures.exists('laser-beam')) return
-  const g = scene.add.graphics({ x: 0, y: 0 })
-  g.clear()
-  g.fillStyle(0x00ffff, 1)
-  g.fillRoundedRect(0, 0, 6, 28, 3)
-  g.generateTexture('laser-beam', 6, 28)
-  g.destroy()
-}
-
-// Utility to generate an enemy laser texture (red) if not present
-const ensureEnemyLaserTexture = (scene: Phaser.Scene): void => {
-  if (scene.textures.exists('enemy-laser')) return
-  const g = scene.add.graphics({ x: 0, y: 0 })
-  g.clear()
-  g.fillStyle(0xff4d3a, 1)
-  g.fillRoundedRect(0, 0, 6, 28, 3)
-  g.generateTexture('enemy-laser', 6, 28)
-  g.destroy()
-}
+// Functions moved to respective managers
 
 // Shield system functions
 const createShieldTexture = (scene: Phaser.Scene, color: number, state: 'healthy' | 'damaged' | 'critical'): string => {
@@ -548,6 +219,12 @@ export class SkillSpaceScene extends Phaser.Scene {
   private static readonly SHIELD_BARRIER_RADIUS = 90
   private static readonly SHIELD_DETECTION_RADIUS = 120
 
+  // Manager instances
+  private stationManager: SpaceStationManager
+  private effectsManager: EffectsManager
+  private uiManager: UIManager
+  private sceneConfigManager: SceneConfigManager
+
   private state: SceneState = {
     player: null,
     spaceStations: null,
@@ -571,6 +248,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     shieldMapManager: null,
     enemyAI: null,
     combatEnabled: false,
+    unlockedStations: new Set<string>(),
+    undockSpawnedForStation: new Set<string>(),
+    totalStationCount: 0,
     enemyPositionTimer: null
   }
 
@@ -579,6 +259,12 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   constructor() {
     super({ key: 'SkillSpaceScene' })
+    
+    // Initialize managers
+    this.stationManager = new SpaceStationManager(this)
+    this.effectsManager = new EffectsManager(this)
+    this.uiManager = new UIManager(this)
+    this.sceneConfigManager = new SceneConfigManager(this)
   }
 
   preload(): void {
@@ -637,12 +323,11 @@ export class SkillSpaceScene extends Phaser.Scene {
 
   private initializeScene(): void {
     const { width, height } = this.scale
-     
-    // Initialize XP for this scene session
-    this.xpTotal = 0
     
-    // Setup space background
-    setupSpaceBackground(this)
+    // Setup scene configuration
+    this.sceneConfigManager.setupSpaceBackground()
+    this.sceneConfigManager.ensureLaserTexture()
+    this.sceneConfigManager.ensureEnemyLaserTexture()
     
     // Create player - start on right side, vertically centered
     this.state.player = createPlayer(this, width - 150, height / 2)
@@ -651,13 +336,19 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Set collision layer for player
     CollisionLayerHelper.setCollisionLayer(this.state.player, CollisionLayer.PLAYER_SHIP)
 
-    // Prepare laser assets/group
-    ensureLaserTexture(this)
+    // Prepare laser groups
     this.state.lasers = this.add.group()
-
-    // Enemy lasers
-    ensureEnemyLaserTexture(this)
     this.state.enemyLasers = this.add.group()
+
+    // Initialize UI Manager
+    this.uiManager.initialize(this.state.playerHealth, this.state.maxPlayerHealth)
+    
+    // Get UI element references from manager
+    this.state.interactionPrompt = this.uiManager.getInteractionPrompt()
+    this.xpText = this.uiManager.getXpText()
+
+    // Initialize Space Station Manager
+    this.stationManager.initialize(this.handleStationInteraction)
 
     // Initialize Enemy AI System
     this.state.enemyAI = new EnemyAISystem(this, this.state.shieldMapManager)
@@ -675,31 +366,16 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Setup cleanup when scene is destroyed
     this.events.once('destroy', this.cleanup, this)
     
-    // Lasers are fired manually when SPACE is held
-    
-    // Create space stations
-    this.state.spaceStations = this.add.group()
-    const stations = createSpaceStationsData()
-    stations.forEach(station => {
-      const stationObject = createSpaceStation(this, station, this.handleStationInteraction)
-      // Set stations to lower depth so player appears above them
-      stationObject.setDepth(1)
-      this.state.spaceStations!.add(stationObject)
-    })
-    // Progression tracking
-    this.state.unlockedStations = new Set<string>()
-    this.state.undockSpawnedForStation = new Set<string>()
-    this.state.totalStationCount = stations.length
-    
-    // Initialize Shield Mapping System
+        // Initialize Shield Mapping System
     this.state.shieldMapManager = new ShieldMapManager(this)
  
      // Create shields for each station
      this.state.shields = this.add.group()
-     stations.forEach(station => {
+     const stationsData = this.stationManager.getStationsData()
+     stationsData.forEach(station => {
        const shield = createStationShield(this, station, station.x, station.y)
        this.state.shields!.add(shield)
- 
+
        // Register shield with mapping system
        const shieldConfig: ShieldZoneConfig = {
          dockingRadius: SkillSpaceScene.SHIELD_DOCKING_RADIUS,       // Inner zone - allows ships to dock
@@ -727,16 +403,17 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Setup controls
     this.setupControls()
     
-    // Create UI elements
-    this.setupUI()
+    // Get remaining UI references we need
+    this.state.healthText = this.uiManager.getHealthText()
     
-    // Create portals
-    this.state.portals = this.add.group()
-    const portalsData = createPortalsData(width, height)
-    portalsData.forEach(portalData => {
-      const portal = createPortal(this, portalData, this.handleSceneTransition)
-      this.state.portals!.add(portal)
-    })
+    // Setup portals using SceneConfigManager
+    this.state.portals = this.sceneConfigManager.setupPortals(this.handleSceneTransition)
+    
+    // Setup stations group reference for proximity detection
+    this.state.spaceStations = this.stationManager.getStationsGroup()
+    
+    // Setup progression tracking  
+    this.state.totalStationCount = this.stationManager.getTotalStationCount()
 
     // Setup collision detection after AI system creates enemies
     this.setupEnemyCollisions()
@@ -818,14 +495,13 @@ export class SkillSpaceScene extends Phaser.Scene {
             this.state.dockedStation = station
             
             // Award XP for successful docking
-            this.xpTotal += 50
-            // this.updateXpUI()
-            this.animateXpGain(50)
+            this.uiManager.addXp(50)
+            this.effectsManager.animateXpGain(50, this.xpText!)
             
             // Also emit event for GameUIScene
             gameEventBridge.emitGameEvent('game:xp-changed', { 
               amount: 50, 
-              total: this.xpTotal 
+              total: this.uiManager.getXpTotal() 
             })
             
             // Mark station unlocked and emit event
@@ -1088,53 +764,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     }
   }
 
-  private setupUI(): void {
-    // Interaction prompt with space theme
-    this.state.interactionPrompt = this.add.text(
-      this.scale.width / 2, 
-      this.scale.height - 80, 
-      '', 
-      {
-        fontSize: '18px',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-        fontStyle: 'bold',
-        color: '#FFFFFF',
-        stroke: '#000000',
-        strokeThickness: 2,
-        backgroundColor: '#2C3E50ee',
-        padding: { x: 12, y: 6 },
-        resolution: 2
-      }
-    ).setOrigin(0.5).setVisible(false)
-
-    // Navigation hints with space terminology
-    this.add.text(20, this.scale.height - 60, 'WASD/Arrows: Navigate | SPACE: Fire lasers | D: Dock/Undock/Interact', {
-      fontSize: '16px',
-      color: '#95A5A6'
-    })
-
-    // Health display (top-left)
-    this.state.healthText = this.add.text(24, 24, '', {
-      fontSize: '22px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-      fontStyle: 'bold',
-      color: '#FF6B6B',
-      stroke: '#000000',
-      strokeThickness: 3
-    }).setDepth(100)
-    this.updateHealthUI()
-
-    // XP display (top-left, below health)
-    this.xpText = this.add.text(24, 60, 'XP: 0', {
-      fontSize: '20px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-      fontStyle: 'bold',
-      color: '#F1C40F',
-      stroke: '#000000',
-      strokeThickness: 3
-    }).setDepth(100)
-    // this.updateXpUI()
-  }
+  // setupUI method removed - now handled by UIManager
 
   update(): void {
     if (!this.state.player || !this.state.cursors) return
@@ -1288,19 +918,16 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (enemy.getData('isDead')) return
     enemy.setData('isDead', true)
 
-    this.spawnExplosionAt(enemy.x, enemy.y)
+    this.effectsManager.spawnExplosionAt(enemy.x, enemy.y)
 
     // Award XP for enemy kill
-    this.xpTotal += 10
-    
-    // Update in-scene XP display
-    // this.updateXpUI()
-    this.animateXpGain(10)
+    this.uiManager.addXp(10)
+    this.effectsManager.animateXpGain(10, this.xpText!)
     
     // Also emit event for GameUIScene (if it's working)
     gameEventBridge.emitGameEvent('game:xp-changed', { 
       amount: 10, 
-      total: this.xpTotal 
+      total: this.uiManager.getXpTotal() 
     })
 
     // Remove enemy from AI system
@@ -1314,39 +941,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     laser.destroy()
   }
 
-  private spawnExplosionAt = (x: number, y: number): void => {
-    const explosion = this.add.image(x, y, 'enemy-explosion')
-    explosion.setDepth(50)
-    explosion.setBlendMode(Phaser.BlendModes.ADD)
-    explosion.setDisplaySize(160, 160)
-    explosion.setAlpha(0.9)
-
-    this.tweens.add({
-      targets: explosion,
-      scale: { from: 0.1, to: 0.5 },
-      alpha: { from: 1 , to: 0 },
-      duration: 550,
-      ease: 'Cubic.Out',
-      onComplete: () => explosion.destroy()
-    })
-  }
-
-  private spawnHeroExplosionAt = (x: number, y: number): void => {
-    const explosion = this.add.image(x, y, 'hero-explosion')
-    explosion.setDepth(50)
-    explosion.setBlendMode(Phaser.BlendModes.ADD)
-    explosion.setDisplaySize(180, 180)
-    explosion.setAlpha(1)
-
-    this.tweens.add({
-      targets: explosion,
-      scale: { from: 0.5, to: 1.0 },
-      alpha: { from: 1, to: 0 },
-      duration: 600,
-      ease: 'Cubic.Out',
-      onComplete: () => explosion.destroy()
-    })
-  }
+  // Explosion methods moved to EffectsManager
 
   // Enemy firing is now handled by the AI system
 
@@ -1371,38 +966,7 @@ export class SkillSpaceScene extends Phaser.Scene {
   //   this.xpText.setText(`XP: ${this.xpTotal}`)
   // }
 
-  private animateXpGain(amount: number): void {
-    if (!this.xpText) return
-
-    // Scale animation for XP text
-    this.tweens.add({
-      targets: this.xpText,
-      scaleX: { from: 1, to: 1.3 },
-      scaleY: { from: 1, to: 1.3 },
-      duration: 200,
-      yoyo: true,
-      ease: 'Back.easeOut'
-    })
-
-    // Floating +XP text
-    const floatingText = this.add.text(this.xpText.x + 80, this.xpText.y, `+${amount}`, {
-      fontSize: '18px',
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
-      fontStyle: 'bold',
-      color: '#F1C40F',
-      stroke: '#000000',
-      strokeThickness: 2
-    }).setDepth(101)
-
-    this.tweens.add({
-      targets: floatingText,
-      y: floatingText.y - 40,
-      alpha: { from: 1, to: 0 },
-      duration: 1000,
-      ease: 'Power2.easeOut',
-      onComplete: () => floatingText.destroy()
-    })
-  }
+  // animateXpGain method moved to EffectsManager
 
   private damagePlayer(amount: number): void {
     if (!this.state.player) return
@@ -1412,7 +976,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.updateHealthUI()
 
     // Feedback: explosion and invulnerability window (no flash)
-    this.spawnHeroExplosionAt(this.state.player.x, this.state.player.y)
+    this.effectsManager.spawnHeroExplosionAt(this.state.player.x, this.state.player.y)
     this.state.isPlayerInvulnerable = true
     this.time.delayedCall(SkillSpaceScene.PLAYER_INVULNERABILITY_MS, () => {
       this.state.isPlayerInvulnerable = false
@@ -1443,7 +1007,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.damageShield(shield, 1)
 
     // Create hit effect at impact point
-    this.createShieldHitEffect(laser.x, laser.y, shieldConfig.color)
+    this.effectsManager.createShieldHitEffect(laser.x, laser.y, shieldConfig.color)
   }
 
   private damageShield(shield: Phaser.GameObjects.Container, damage: number): void {
@@ -1472,7 +1036,7 @@ export class SkillSpaceScene extends Phaser.Scene {
       }
       
       // Create shield destruction effect
-      this.createShieldDestructionEffect(shield.x, shield.y, shieldConfig.color)
+      this.effectsManager.createShieldDestructionEffect(shield.x, shield.y, shieldConfig.color)
     }
 
     // Update the shield config data
@@ -1536,7 +1100,7 @@ export class SkillSpaceScene extends Phaser.Scene {
               this.state.shieldMapManager.updateShieldState(shieldConfig.stationId, true)
             }
             
-            this.createShieldReactivationEffect(shield.x, shield.y, shieldConfig.color)
+            this.effectsManager.createShieldReactivationEffect(shield.x, shield.y, shieldConfig.color)
           }
 
           // Update visuals on each regen tick
@@ -1549,54 +1113,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     }, this)
   }
 
-  private createShieldHitEffect(x: number, y: number, color: number): void {
-    // Create a particle burst effect at hit location
-    const particles = this.add.particles(x, y, 'laser-beam', {
-      scale: { start: 0.3, end: 0 },
-      alpha: { start: 0.8, end: 0 },
-      tint: color,
-      speed: { min: 50, max: 150 },
-      lifespan: 300,
-      quantity: 5
-    })
-
-    // Clean up particles after animation
-    this.time.delayedCall(500, () => {
-      particles.destroy()
-    })
-  }
-
-  private createShieldDestructionEffect(x: number, y: number, color: number): void {
-    // Create a larger particle burst for shield destruction
-    const particles = this.add.particles(x, y, 'laser-beam', {
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 1, end: 0 },
-      tint: color,
-      speed: { min: 100, max: 250 },
-      lifespan: 600,
-      quantity: 15
-    })
-
-    this.time.delayedCall(800, () => {
-      particles.destroy()
-    })
-  }
-
-  private createShieldReactivationEffect(x: number, y: number, color: number): void {
-    // Create a gentle reformation effect
-    const particles = this.add.particles(x, y, 'laser-beam', {
-      scale: { start: 0.1, end: 0.4 },
-      alpha: { start: 0.3, end: 0.8 },
-      tint: color,
-      speed: { min: 20, max: 80 },
-      lifespan: 800,
-      quantity: 10
-    })
-
-    this.time.delayedCall(1000, () => {
-      particles.destroy()
-    })
-  }
+  // Shield effect methods moved to EffectsManager
 
   // Enemy barrier enforcement is now handled by the AI system
 
