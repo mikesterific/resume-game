@@ -237,7 +237,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     shields: null,
     shieldMapManager: null,
     enemyAI: null,
-    combatEnabled: false,
+    combatEnabled: true, // Start with combat enabled so enemies spawn when docking
     unlockedStations: new Set<string>(),
     dockSpawnedForStation: new Set<string>(),
     totalStationCount: 0,
@@ -347,11 +347,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     this.state.enemyAI = new EnemyAISystem(this, this.state.shieldMapManager)
     this.state.enemyAI.initialize(this.state.enemyLasers)
     this.state.enemyAI.setPlayerTarget(this.state.player)
+    this.state.enemyAI.setCombatEnabled(true) // Enable combat for enemy spawning on dock
     
-    // Only spawn initial enemies if combat is enabled
-    if (this.state.combatEnabled) {
-      this.state.enemyAI.spawnFromLeft(2)
-    }
+    // No initial enemy spawn - enemies only spawn when docking with stations
     
     // Setup enemy position timer for radar system
     this.setupEnemyPositionTimer()
@@ -542,7 +540,6 @@ export class SkillSpaceScene extends Phaser.Scene {
               const alreadySpawned = stationId && this.state.dockSpawnedForStation?.has(stationId)
               if (stationId && !alreadySpawned) {
                 // Prefer outside random spawns so ships fly in from offscreen
-                console.log(`🚀 Spawning 3 enemies for station ${stationId} on dock`)
                 if (typeof this.state.enemyAI.spawnFromOutsideRandom === 'function') {
                   this.state.enemyAI.spawnFromOutsideRandom(3)
                 } else {
@@ -671,10 +668,8 @@ export class SkillSpaceScene extends Phaser.Scene {
           this.state.enemyAI.setCombatEnabled(newCombatState)
           
           if (newCombatState && !previousState) {
-            // Combat turned ON: spawn enemies if none exist
-            if (this.state.enemyAI.getEnemyCount() === 0) {
-              this.state.enemyAI.spawnFromLeft(2)
-            }
+            // Combat turned ON: enemies will spawn when docking with stations
+            // No automatic spawning here
           } else if (!newCombatState && previousState) {
             // Combat turned OFF: despawn all enemies and clear enemy lasers
             this.state.enemyAI.despawnAll()

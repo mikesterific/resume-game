@@ -16,7 +16,7 @@ jest.mock('@/game/systems/PlayerSystem', () => ({
 
 const mockEnemyAI = {
   initialize: jest.fn(), setPlayerTarget: jest.fn(), setShieldManager: jest.fn(),
-  spawnFromLeft: jest.fn(), spawnFromOutsideRandom: jest.fn(), spawnWave: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' })), getEnemyCount: jest.fn(() => 0)
+  spawnFromLeft: jest.fn(), spawnFromOutsideRandom: jest.fn(), spawnWave: jest.fn(), despawnAll: jest.fn(), updateAll: jest.fn(), getActiveAgents: jest.fn(()=>[]), removeEnemy: jest.fn(), setCombatEnabled: jest.fn(), getAgentBySprite: jest.fn(() => ({ id: 'e1' })), getEnemyCount: jest.fn(() => 0)
 }
 jest.mock('@/game/systems/EnemyAISystem', () => ({ EnemyAISystem: jest.fn(() => ({ ...mockEnemyAI })) }))
 
@@ -42,6 +42,10 @@ describe('SkillSpaceScene', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Reset the gameEventBridge by clearing its listeners map
+    if (gameEventBridge && gameEventBridge.listeners) {
+      gameEventBridge.listeners.clear()
+    }
     scene = new SkillSpaceScene()
   })
 
@@ -65,8 +69,27 @@ describe('SkillSpaceScene', () => {
 
   test('ui:setting-changed toggles combat on EnemyAI', () => {
     scene.create()
+    
+    // Mock the clear method on enemyLasers group before any events
+    const clearMock = jest.fn()
+    scene['state'].enemyLasers.clear = clearMock
+    
+    // Test enabling combat (no spawning since we removed that behavior)
+    gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'combatEnabled', value: true })
+    expect(mockEnemyAI.setCombatEnabled).toHaveBeenCalledWith(true)
+    
+    // Test disabling combat - should despawn all enemies
+    mockEnemyAI.setCombatEnabled.mockClear()
+    mockEnemyAI.despawnAll.mockClear()
+    clearMock.mockClear()
+    
+    // Need to set combatEnabled to true first for the previousState check
+    scene['state'].combatEnabled = true
+    
     gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'combatEnabled', value: false })
     expect(mockEnemyAI.setCombatEnabled).toHaveBeenCalledWith(false)
+    expect(mockEnemyAI.despawnAll).toHaveBeenCalled()
+    expect(clearMock).toHaveBeenCalledWith(true, true)
   })
 
   test('updateStationProximity shows shield-up message when shield active', () => {
