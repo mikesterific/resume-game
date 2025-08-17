@@ -100,53 +100,148 @@ export default defineComponent({
         stationHealth: 92,
       },
       enemyData: null as EnemyRadarData | null,
-      combatEnabled: false // Track combat/enemy setting
+      combatEnabled: false, // Track combat/enemy setting
+      radarStation: null as { id: string; x: number; y: number; name: string } | null // Station that opened this modal
     }
   },
   computed: {
     radarBlips(): RadarBlip[] {
+      console.log('🎯 RADAR DEBUG: Computing radarBlips...')
+      console.log('🎯 RADAR DEBUG: combatEnabled:', this.combatEnabled)
+      console.log('🎯 RADAR DEBUG: enemyData:', this.enemyData)
+      console.log('🎯 RADAR DEBUG: radarStation:', this.radarStation)
+      
       // If combat/enemies are disabled, show no blips
       if (!this.combatEnabled) {
+        console.log('🎯 RADAR DEBUG: Combat disabled, returning empty array')
         return []
       }
 
-      // Use real enemy data if available, otherwise fall back to test data
-      if (this.enemyData && this.enemyData.enemies.length > 0) {
-        return this.enemyData.enemies.map(enemy => ({
-          x: enemy.x,
-          y: enemy.y,
-          key: enemy.id
-        }))
+      // Always show blips when a station modal is open, regardless of combat setting
+      if (this.radarStation) {
+        console.log('🎯 RADAR DEBUG: Station modal is open, ensuring blips are shown')
+        
+        // Use real enemy data if available, transform to station-centered coordinates
+        if (this.enemyData && this.enemyData.enemies.length > 0) {
+          console.log('🎯 RADAR DEBUG: Processing real enemy data with station centering')
+          
+          const transformedBlips = this.enemyData.enemies.map(enemy => {
+            // Convert radar coordinates back to world coordinates using original center
+            const radarRadius = 130 // UI_CONFIG.radar.radius
+            const gameWorldRadius = 450 // UI_CONFIG.radar.gameWorldRadius
+            const originalCenter = this.enemyData!.playerPosition
+            
+            console.log(`🎯 RADAR DEBUG: Enemy ${enemy.id} original radar coords: (${enemy.x}, ${enemy.y})`)
+            console.log('🎯 RADAR DEBUG: Original center (player/docked station):', originalCenter)
+            
+            // Radar -> World coordinate conversion
+            const worldX = originalCenter.x + (enemy.x / radarRadius) * gameWorldRadius
+            const worldY = originalCenter.y + (enemy.y / radarRadius) * gameWorldRadius
+            
+            console.log(`🎯 RADAR DEBUG: Enemy ${enemy.id} world coords: (${worldX}, ${worldY})`)
+            console.log('🎯 RADAR DEBUG: Modal station position:', this.radarStation)
+            
+            // World -> New radar coordinates using modal station as center
+            const relativeX = worldX - this.radarStation!.x
+            const relativeY = worldY - this.radarStation!.y
+            const newRadarX = (relativeX / gameWorldRadius) * radarRadius
+            const newRadarY = (relativeY / gameWorldRadius) * radarRadius
+            
+            console.log(`🎯 RADAR DEBUG: Enemy ${enemy.id} relative to station: (${relativeX}, ${relativeY})`)
+            console.log(`🎯 RADAR DEBUG: Enemy ${enemy.id} new radar coords: (${newRadarX}, ${newRadarY})`)
+            
+            // Clamp to radar bounds
+            const clampedBlip = {
+              x: Math.max(-radarRadius, Math.min(radarRadius, newRadarX)),
+              y: Math.max(-radarRadius, Math.min(radarRadius, newRadarY)),
+              key: enemy.id
+            }
+            
+            console.log(`🎯 RADAR DEBUG: Enemy ${enemy.id} final clamped coords: (${clampedBlip.x}, ${clampedBlip.y})`)
+            return clampedBlip
+          })
+          
+          console.log('🎯 RADAR DEBUG: Returning transformed blips:', transformedBlips)
+          return transformedBlips
+        }
+        
+        // Station modal is open but no real enemies - show fallback test data for demonstration
+        console.log('🎯 RADAR DEBUG: Station modal open but no real enemies, using fallback test data')
+        return [
+          { x: -45, y: 30, key: 'test-enemy-1' },
+          { x: 60, y: -80, key: 'test-enemy-2' },
+          { x: -20, y: 70, key: 'test-enemy-3' }
+        ]
       }
       
-      // Fallback test data when no enemies present but combat is enabled
-      return [
-        { x: -45, y: 30, key: 'test-enemy-1' },
-        { x: 60, y: -80, key: 'test-enemy-2' },
-        { x: -20, y: 70, key: 'test-enemy-3' }
-      ]
+      // No station modal open - respect combat setting
+      console.log('🎯 RADAR DEBUG: No station modal open, returning empty array')
+      return []
+    }
+  },
+  watch: {
+    skill: {
+      handler(newSkill) {
+        console.log('🎯 RADAR DEBUG: Skill prop changed:', newSkill)
+        if (newSkill) {
+          // Give a moment for any events to fire, then set fallback if needed
+          setTimeout(() => {
+            this.setFallbackRadarStation()
+          }, 50)
+        }
+      },
+      immediate: true
     }
   },
   mounted() {
+    console.log('🎯 RADAR DEBUG: SkillModal mounted, setting up event listeners')
+    
     // Listen for enemy position updates
     gameEventBridge.onGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
     
     // Listen for combat setting changes
     gameEventBridge.onGameEvent('ui:setting-changed', this.handleSettingChange)
     
+    // Listen for skill selection to capture which station opened the modal
+    gameEventBridge.onGameEvent('game:skill-selected', this.handleSkillSelected)
+    
     // Initialize combat setting from localStorage
     this.initializeCombatSetting()
+    
+    console.log('🎯 RADAR DEBUG: Event listeners set up, radarStation:', this.radarStation)
+    
+    // Set fallback radar station after a brief delay to allow events to fire
+    setTimeout(() => {
+      this.setFallbackRadarStation()
+    }, 100)
   },
   unmounted() {
     // Clean up event listeners to prevent memory leaks
     gameEventBridge.offGameEvent('game:enemy-positions-updated', this.handleEnemyUpdate)
     gameEventBridge.offGameEvent('ui:setting-changed', this.handleSettingChange)
+    gameEventBridge.offGameEvent('game:skill-selected', this.handleSkillSelected)
   },
   methods: {
     initializeCombatSetting() {
       // Read combat setting from localStorage, matching GameUIScene logic
       const stored = localStorage.getItem('portfolioQuest_combatEnabled')
       this.combatEnabled = stored ? JSON.parse(stored) : false
+      console.log('🎯 RADAR DEBUG: Combat setting initialized:', this.combatEnabled)
+    },
+
+    // Fallback method to set radar station if not set via event
+    setFallbackRadarStation() {
+      if (!this.radarStation && this.skill) {
+        console.log('🎯 RADAR DEBUG: No radarStation set, creating fallback based on skill:', this.skill)
+        // Create a fallback station position (this won't be accurate but will show blips)
+        this.radarStation = {
+          id: `${this.skill.id}-station`,
+          x: 800, // Default position
+          y: 400, // Default position  
+          name: `${this.skill.name} Station`
+        }
+        console.log('🎯 RADAR DEBUG: Fallback radarStation set:', this.radarStation)
+      }
     },
 
     handleEnemyUpdate(data: EnemyRadarData) {
@@ -159,6 +254,13 @@ export default defineComponent({
       if (data.key === 'combatEnabled') {
         this.combatEnabled = data.value
       }
+    },
+
+    handleSkillSelected(data: { skillId: string; stationData: { id: string; x: number; y: number; name: string } }) {
+      // Capture which station opened this modal for radar centering
+      console.log('🎯 RADAR DEBUG: SkillModal received skill-selected event:', data)
+      this.radarStation = data.stationData
+      console.log('🎯 RADAR DEBUG: radarStation set to:', this.radarStation)
     },
 
     getRelatedProjects(category?: string): ProjectData[] {

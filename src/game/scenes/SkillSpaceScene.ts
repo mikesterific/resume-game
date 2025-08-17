@@ -522,8 +522,19 @@ export class SkillSpaceScene extends Phaser.Scene {
               this.state.interactionPrompt.setVisible(true)
             }
             
-            // Emit skill selected event
-            gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
+            // Emit skill selected event with station data for radar centering
+            const currentStationData = station.getData('stationData')
+            const stationDataForRadar = {
+              id: currentStationData.id,
+              x: currentStationData.x,
+              y: currentStationData.y,
+              name: currentStationData.name
+            }
+            console.log('🎯 RADAR DEBUG: Emitting skill-selected with station data:', stationDataForRadar)
+            gameEventBridge.emitGameEvent('game:skill-selected', { 
+              skillId,
+              stationData: stationDataForRadar
+            })
           }
         })
       }
@@ -559,8 +570,18 @@ export class SkillSpaceScene extends Phaser.Scene {
     }
   }
 
-  private handleStationInteraction = (skillId: string): void => {
-    gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
+  private handleStationInteraction = (skillId: string, stationData: any): void => {
+    const stationDataForRadar = {
+      id: stationData.id,
+      x: stationData.x,
+      y: stationData.y,
+      name: stationData.name
+    }
+    console.log('🎯 RADAR DEBUG: handleStationInteraction emitting with station data:', stationDataForRadar)
+    gameEventBridge.emitGameEvent('game:skill-selected', { 
+      skillId,
+      stationData: stationDataForRadar
+    })
   }
 
   private handleSceneTransition = (sceneName: string): void => {
@@ -676,16 +697,13 @@ export class SkillSpaceScene extends Phaser.Scene {
   }
 
   private emitEnemyPositions(): void {
-    // Only emit if we have enemies and player exists
+    // Only emit if we have player - always emit so radar can clear when no enemies
     if (!this.state.enemyAI || !this.state.player) return
 
     const activeEnemies = this.state.enemyAI.getActiveAgents()
     
     // Debug: Log how many enemies we have
     console.log(`🎯 Radar Debug: Found ${activeEnemies.length} active enemies`)
-    
-    // Performance optimization: skip emission if no enemies
-    if (activeEnemies.length === 0) return
 
     // Determine radar center: use station position when docked, otherwise player position
     let radarCenterPos: { x: number, y: number }
@@ -739,7 +757,9 @@ export class SkillSpaceScene extends Phaser.Scene {
       timestamp: this.time.now
     }
 
-    // Emit the event for radar display
+    console.log('🎯 RADAR DEBUG: Emitting enemy-positions-updated event:', radarData)
+
+    // Always emit the event for radar display (even if empty array)
     gameEventBridge.emitGameEvent('game:enemy-positions-updated', radarData)
   }
 

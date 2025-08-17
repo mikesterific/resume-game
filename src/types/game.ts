@@ -95,7 +95,7 @@ export interface GameEvents {
   'game:scene-changed': { sceneName: string }
   'game:scene-starting': { sceneName: string }
   'game:project-selected': { projectId: string }
-  'game:skill-selected': { skillId: string }
+  'game:skill-selected': { skillId: string; stationData: { id: string; x: number; y: number; name: string } }
   'game:resume-opened': void
   'game:contact-opened': void
   'game:xp-changed': { amount: number; total: number }

@@ -33,7 +33,7 @@ export class SpaceStationManager {
   /**
    * Initialize all space stations in the scene
    */
-  initialize(onInteract: (stationId: string) => void): void {
+  initialize(onInteract: (skillId: string, stationData: SpaceStationData) => void): void {
     // Create the stations group now that scene is initialized
     this.stations = this.scene.add.group()
     
@@ -217,7 +217,7 @@ export class SpaceStationManager {
 
   private createSpaceStation(
     station: SpaceStationData, 
-    onInteract: (stationId: string) => void
+    onInteract: (skillId: string, stationData: SpaceStationData) => void
   ): Phaser.GameObjects.Container {
     const stationContainer = this.scene.add.container(station.x, station.y)
     
@@ -301,7 +301,7 @@ export class SpaceStationManager {
     stationContainer.setData('isStation', true)
     stationContainer.setSize(80, 80)
     stationContainer.setInteractive()
-    stationContainer.on('pointerdown', () => onInteract(station.skillId))
+    stationContainer.on('pointerdown', () => onInteract(station.skillId, station))
     
     return stationContainer
   }

@@ -348,8 +348,12 @@ describe('SkillSpaceScene', () => {
     scene.create()
     const emitSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
     const startSpy = jest.spyOn(scene.scene, 'start')
-    scene['handleStationInteraction']('testing')
-    expect(emitSpy).toHaveBeenCalledWith('game:skill-selected', { skillId: 'testing' })
+    const mockStationData = { id: 'test-station', x: 100, y: 200, name: 'Test Station' }
+    scene['handleStationInteraction']('testing', mockStationData)
+    expect(emitSpy).toHaveBeenCalledWith('game:skill-selected', { 
+      skillId: 'testing',
+      stationData: mockStationData
+    })
     scene['handleSceneTransition']('ProjectForestScene')
     expect(emitSpy).toHaveBeenCalledWith('game:scene-starting', { sceneName: 'ProjectForestScene' })
     expect(startSpy).toHaveBeenCalledWith('ProjectForestScene')
@@ -606,6 +610,8 @@ describe('SkillSpaceScene', () => {
     scene['state'].player = { x: 0, y: 0 }
     scene['state'].isDocking = false
     const station = scene.add.container(120, 130)
+    // Add mock station data that the docking method expects
+    station.setData('stationData', { id: 'frontend-station', x: 120, y: 130, name: 'Frontend Station' })
     const emitSpy = jest.spyOn(require('@/game/GameEventBridge').default, 'emitGameEvent')
     // Run docking
     scene['dockWithStation'](station, 'frontend')
@@ -613,7 +619,10 @@ describe('SkillSpaceScene', () => {
     expect(scene['state'].isDocked).toBe(true)
     expect(scene['uiManager'].getXpTotal()).toBe(50)
     expect(emitSpy).toHaveBeenCalledWith('game:xp-changed', { amount: 50, total: 50 })
-    expect(emitSpy).toHaveBeenCalledWith('game:skill-selected', { skillId: 'frontend' })
+    expect(emitSpy).toHaveBeenCalledWith('game:skill-selected', { 
+      skillId: 'frontend',
+      stationData: { id: 'frontend-station', x: 120, y: 130, name: 'Frontend Station' }
+    })
   })
 
   test('damagePlayer reduces health and triggers invulnerability', () => {
