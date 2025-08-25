@@ -10,8 +10,9 @@ const PLAYER_CONFIG = {
   SIZE: 128,
   SPEED: 200,
   DRAG: 500,
-  ROTATION_SPEED: 5, // degrees per frame
-  MIN_SPEED_FOR_ROTATION: 50, // minimum speed to trigger rotation
+  MANUAL_ROTATION_SPEED: 25, // degrees per frame for Q/E manual controls
+  AUTO_ROTATION_SPEED: 15,   // degrees per frame for enhanced velocity-based rotation
+  MIN_SPEED_FOR_ROTATION: 50, // minimum speed to trigger automatic rotation
 } as const
 
 // Player state interface
@@ -37,7 +38,6 @@ const createPlayer = (scene: Phaser.Scene, x: number, y: number): Phaser.GameObj
   const initialRotation = 3 * Math.PI / 2 // 270 degrees = facing left (sprite faces up by default)
   player.setRotation(initialRotation)
   player.setData('targetRotation', initialRotation)
-  player.setData('rotationSpeed', PLAYER_CONFIG.ROTATION_SPEED)
   
   // Add engine state tracking
   player.setData('enginesOn', false)
@@ -65,6 +65,28 @@ const updatePlayerEngineState = (
 }
 
 /**
+ * Updates player manual rotation based on Q/E key input
+ */
+const updatePlayerManualRotation = (
+  player: Phaser.GameObjects.Sprite,
+  isRotateLeftPressed: boolean,
+  isRotateRightPressed: boolean
+): void => {
+  const rotationStep = PLAYER_CONFIG.MANUAL_ROTATION_SPEED * (Math.PI / 180)
+  
+  if (isRotateLeftPressed) {
+    // Rotate counter-clockwise
+    player.rotation -= rotationStep
+  } else if (isRotateRightPressed) {
+    // Rotate clockwise
+    player.rotation += rotationStep
+  }
+  
+  // Update target rotation to current rotation to maintain smooth fallback
+  player.setData('targetRotation', player.rotation)
+}
+
+/**
  * Updates player rotation based on velocity with smooth interpolation
  */
 const updatePlayerRotation = (
@@ -80,10 +102,10 @@ const updatePlayerRotation = (
     player.setData('targetRotation', targetRotation)
   }
   
-  // Smooth interpolation to target rotation
+  // Smooth interpolation to target rotation using enhanced speed
   const currentRotation = player.rotation
   const targetRotation = player.getData('targetRotation')
-  const rotationSpeed = player.getData('rotationSpeed')
+  const enhancedRotationSpeed = PLAYER_CONFIG.AUTO_ROTATION_SPEED // Use enhanced speed
   
   const rotationDiff = Phaser.Math.Angle.ShortestBetween(
     Phaser.Math.RadToDeg(currentRotation),
@@ -91,7 +113,7 @@ const updatePlayerRotation = (
   )
   
   if (Math.abs(rotationDiff) > 1) {
-    const rotationStep = Math.sign(rotationDiff) * rotationSpeed * (Math.PI / 180)
+    const rotationStep = Math.sign(rotationDiff) * enhancedRotationSpeed * (Math.PI / 180)
     player.rotation += rotationStep
   }
 }
@@ -113,6 +135,10 @@ const updatePlayerVelocity = (
   const isUpPressed = cursors.up.isDown || keyboard.addKey('W').isDown
   const isDownPressed = cursors.down.isDown || keyboard.addKey('S').isDown
 
+  // Manual rotation controls (Q/E keys)
+  const isRotateLeftPressed = keyboard.addKey('Q').isDown
+  const isRotateRightPressed = keyboard.addKey('E').isDown
+
   // Check if any movement key is pressed
   const isMoving = isLeftPressed || isRightPressed || isUpPressed || isDownPressed
 
@@ -125,16 +151,21 @@ const updatePlayerVelocity = (
   // Update engine state based on input
   updatePlayerEngineState(player, isMoving)
 
-  // Update rotation based on velocity
-  updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
+  // Handle manual rotation with priority over velocity-based rotation
+  if (isRotateLeftPressed || isRotateRightPressed) {
+    updatePlayerManualRotation(player, isRotateLeftPressed, isRotateRightPressed)
+  } else {
+    // Fallback to enhanced velocity-based rotation when no manual input
+    updatePlayerRotation(player, { x: playerBody.velocity.x, y: playerBody.velocity.y })
+  }
 }
 
 /**
  * Preloads player assets - call this in scene preload methods
  */
 const preloadPlayerAssets = (scene: Phaser.Scene): void => {
-  scene.load.image('hero-spaceship-off', 'src/assets/images/HeroSpaceShipOff.png')
-  scene.load.image('hero-spaceship-on', 'src/assets/images/HeroSpaceShipOn.png')
+  scene.load.image('hero-spaceship-off', '/src/assets/images/HeroSpaceShipOff.png')
+  scene.load.image('hero-spaceship-on', '/src/assets/images/HeroSpaceShipOn.png')
 }
 
 /**
@@ -165,6 +196,7 @@ export default {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
+  updatePlayerManualRotation,
   updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject
@@ -176,6 +208,7 @@ export {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
+  updatePlayerManualRotation,
   updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject,

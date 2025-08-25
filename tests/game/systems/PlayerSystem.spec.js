@@ -3,6 +3,7 @@ const {
   createPlayer,
   updatePlayerVelocity,
   updatePlayerRotation,
+  updatePlayerManualRotation,
   updatePlayerEngineState,
   preloadPlayerAssets,
   findNearestObject,
@@ -19,7 +20,6 @@ describe('PlayerSystem', () => {
     const p = createPlayer(scene, 100, 200)
     expect(p).toBeTruthy()
     expect(p.getData('enginesOn')).toBe(false)
-    expect(p.getData('rotationSpeed')).toBe(PLAYER_CONFIG.ROTATION_SPEED)
     expect(p.getData('targetRotation')).toBeDefined()
     expect(p.body).toBeDefined()
   })
@@ -27,8 +27,8 @@ describe('PlayerSystem', () => {
   test('preloadPlayerAssets loads textures', () => {
     const spy = jest.spyOn(scene.load, 'image')
     preloadPlayerAssets(scene)
-    expect(spy).toHaveBeenCalledWith('hero-spaceship-off', 'src/assets/images/HeroSpaceShipOff.png')
-    expect(spy).toHaveBeenCalledWith('hero-spaceship-on', 'src/assets/images/HeroSpaceShipOn.png')
+    expect(spy).toHaveBeenCalledWith('hero-spaceship-off', '/src/assets/images/HeroSpaceShipOff.png')
+    expect(spy).toHaveBeenCalledWith('hero-spaceship-on', '/src/assets/images/HeroSpaceShipOn.png')
   })
 
   test('updatePlayerEngineState toggles textures only on state change', () => {
@@ -56,7 +56,6 @@ describe('PlayerSystem', () => {
     const p = scene.add.sprite(0,0,'hero-spaceship-off')
     p.rotation = 0
     p.setData('targetRotation', 0)
-    p.setData('rotationSpeed', 10)
 
     // Low speed: only interpolation runs (targetRotation unchanged)
     updatePlayerRotation(p, { x: 0, y: 0 })
@@ -76,20 +75,30 @@ describe('PlayerSystem', () => {
       setVelocityX: jest.fn(function(x){ this.velocity.x = x; return this }),
       setVelocityY: jest.fn(function(y){ this.velocity.y = y; return this })
     }
+    p.setData('targetRotation', 0)
+    p.setData('enginesOn', false)
 
     const cursors = { left: { isDown: true }, right: { isDown: false }, up: { isDown: false }, down: { isDown: false } }
-    const keyboard = { addKey: () => ({ isDown: false }) }
+    const keyboard = { 
+      addKey: jest.fn().mockImplementation((key) => {
+        // Mock Q and E keys as not pressed for this test
+        if (key === 'Q' || key === 'E') return { isDown: false }
+        // Mock other keys (A, D, W, S) as not pressed
+        return { isDown: false }
+      })
+    }
 
     const engineSpy = jest.spyOn(p, 'setData')
-    const rotationSpy = jest.spyOn(p, 'setData')
 
     updatePlayerVelocity(p, cursors, keyboard, 123)
 
     expect(p.body.setVelocity).toHaveBeenCalledWith(0)
     expect(p.body.setVelocityX).toHaveBeenCalledWith(-123)
-    // rotation and engine state were updated via setData calls
+    // engine state was updated via setData calls
     expect(engineSpy).toHaveBeenCalled()
-    expect(rotationSpy).toHaveBeenCalled()
+    // Q and E keys should be checked
+    expect(keyboard.addKey).toHaveBeenCalledWith('Q')
+    expect(keyboard.addKey).toHaveBeenCalledWith('E')
   })
 
   test('findNearestObject returns nearest within maxDistance or null', () => {
@@ -103,5 +112,66 @@ describe('PlayerSystem', () => {
 
     const res2 = findNearestObject(player, [c], 50)
     expect(res2).toBeNull()
+  })
+
+  test('updatePlayerManualRotation rotates ship based on Q/E input', () => {
+    const p = scene.add.sprite(0, 0, 'hero-spaceship-off')
+    p.rotation = 0
+    p.setData('targetRotation', 0)
+
+    // Test Q key (counter-clockwise rotation)
+    updatePlayerManualRotation(p, true, false)
+    expect(p.rotation).toBeLessThan(0) // Should rotate counter-clockwise (negative)
+    expect(p.getData('targetRotation')).toBe(p.rotation) // Should sync target rotation
+
+    // Reset and test E key (clockwise rotation)
+    p.rotation = 0
+    p.setData('targetRotation', 0)
+    updatePlayerManualRotation(p, false, true)
+    expect(p.rotation).toBeGreaterThan(0) // Should rotate clockwise (positive)
+    expect(p.getData('targetRotation')).toBe(p.rotation) // Should sync target rotation
+
+    // Test no input (should not change rotation)
+    const originalRotation = p.rotation
+    updatePlayerManualRotation(p, false, false)
+    expect(p.rotation).toBe(originalRotation) // Should remain unchanged
+  })
+
+  test('updatePlayerVelocity prioritizes manual rotation over velocity-based', () => {
+    const p = scene.add.sprite(0, 0, 'hero-spaceship-off')
+    p.body = {
+      velocity: { x: 100, y: 0 }, // Fast movement that would normally cause rotation
+      setVelocity: jest.fn(),
+      setVelocityX: jest.fn(function(x){ this.velocity.x = x; return this }),
+      setVelocityY: jest.fn(function(y){ this.velocity.y = y; return this })
+    }
+    p.rotation = 0
+    p.setData('targetRotation', 0)
+    p.setData('enginesOn', false)
+
+    const cursors = { left: { isDown: false }, right: { isDown: true }, up: { isDown: false }, down: { isDown: false } }
+    const keyboard = { 
+      addKey: jest.fn().mockImplementation((key) => {
+        if (key === 'Q') return { isDown: true } // Q pressed - manual rotation
+        if (key === 'E') return { isDown: false }
+        return { isDown: false }
+      })
+    }
+
+    const originalRotation = p.rotation
+    updatePlayerVelocity(p, cursors, keyboard, 200)
+
+    // Should use manual rotation instead of velocity-based
+    expect(p.rotation).not.toBe(originalRotation) // Rotation should have changed due to Q key
+    expect(p.rotation).toBeLessThan(0) // Should be counter-clockwise from Q key
+  })
+
+  test('PLAYER_CONFIG contains enhanced rotation speeds', () => {
+    expect(PLAYER_CONFIG.MANUAL_ROTATION_SPEED).toBe(25)
+    expect(PLAYER_CONFIG.AUTO_ROTATION_SPEED).toBe(15)
+    expect(PLAYER_CONFIG.MIN_SPEED_FOR_ROTATION).toBe(50)
+    expect(PLAYER_CONFIG.SIZE).toBe(128)
+    expect(PLAYER_CONFIG.SPEED).toBe(200)
+    expect(PLAYER_CONFIG.DRAG).toBe(500)
   })
 })
