@@ -64,8 +64,7 @@ describe('Game Configuration System', () => {
     test('UI_CONFIG has correct structure and values', () => {
       expect(UI_CONFIG.radar).toEqual({
         radius: 130,
-        gameWorldRadius: 450,
-        updateIntervalMs: 500
+        gameWorldRadius: 450
       })
 
       expect(UI_CONFIG.proximity).toEqual({

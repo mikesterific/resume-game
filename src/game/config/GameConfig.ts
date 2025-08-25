@@ -85,9 +85,6 @@ export const validateGameConfig = (config: GameConfigInterface): boolean => {
   if (ui.radar.radius <= 0 || ui.radar.gameWorldRadius <= 0) {
     throw new Error('Radar radii must be greater than 0')
   }
-  if (ui.radar.updateIntervalMs <= 0) {
-    throw new Error('Radar update interval must be greater than 0')
-  }
   if (ui.proximity.stationDetectionDistance <= 0 || ui.proximity.portalDetectionDistance <= 0) {
     throw new Error('Proximity detection distances must be greater than 0')
   }

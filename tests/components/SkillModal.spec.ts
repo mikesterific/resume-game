@@ -46,11 +46,8 @@ describe('SkillModal Logic', () => {
     const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
     
     gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'closeModal', value: true })
-    const mockStationData = { id: 'frontend-station', x: 100, y: 200, name: 'Frontend Station' }
-    gameEventBridge.emitGameEvent('game:skill-selected', { skillId: 'frontend', stationData: mockStationData })
     
     expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { key: 'closeModal', value: true })
-    expect(eventSpy).toHaveBeenCalledWith('game:skill-selected', { skillId: 'frontend', stationData: mockStationData })
     
     eventSpy.mockRestore()
   })

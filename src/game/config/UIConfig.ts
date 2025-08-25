@@ -9,8 +9,6 @@ export interface UIConfigInterface {
     radius: number
     /** Game world radius that maps to radar display (pixels) */
     gameWorldRadius: number
-    /** How often to update enemy positions for radar (milliseconds) */
-    updateIntervalMs: number
   }
   proximity: {
     /** Distance at which station interaction prompts appear (pixels) */
@@ -55,8 +53,7 @@ export interface UIConfigInterface {
 export const UI_CONFIG: UIConfigInterface = {
   radar: {
     radius: 130,
-    gameWorldRadius: 450,
-    updateIntervalMs: 500
+    gameWorldRadius: 450
   },
   proximity: {
     stationDetectionDistance: 80,

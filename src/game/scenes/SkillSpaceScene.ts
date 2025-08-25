@@ -8,7 +8,6 @@ import {
 } from '../systems/ShieldMappingSystem'
 import type { ShieldZoneConfig } from '../systems/ShieldMappingSystem'
 import { EnemyAISystem } from '../systems/EnemyAISystem'
-import type { EnemyRadarData } from '@/types/game'
 import { SpaceStationManager, type SpaceStationData } from '../managers/SpaceStationManager'
 import { EffectsManager } from '../managers/EffectsManager'
 import { UIManager } from '../managers/UIManager'
@@ -22,27 +21,6 @@ import {
   GAME_CONFIG
 } from '../config'
 
-// Coordinate transformation function for radar display
-const transformToRadarCoordinates = (
-  enemyWorldPos: { x: number, y: number },
-  playerWorldPos: { x: number, y: number },
-  radarRadius: number = UI_CONFIG.radar.radius
-): { x: number, y: number } => {
-  // Calculate relative position to player
-  const relativeX = enemyWorldPos.x - playerWorldPos.x
-  const relativeY = enemyWorldPos.y - playerWorldPos.y
-  
-  // Scale to radar display bounds - increased range to match canvas height
-  const gameWorldRadius = UI_CONFIG.radar.gameWorldRadius // Full canvas height coverage (900px diameter)
-  const scaleX = (relativeX / gameWorldRadius) * radarRadius
-  const scaleY = (relativeY / gameWorldRadius) * radarRadius
-  
-  // Clamp to radar bounds
-  return {
-    x: Math.max(-radarRadius, Math.min(radarRadius, scaleX)),
-    y: Math.max(-radarRadius, Math.min(radarRadius, scaleY))
-  }
-}
 
 // Types for scene state
 interface SceneState {
@@ -71,7 +49,6 @@ interface SceneState {
   unlockedStations?: Set<string>
   dockSpawnedForStation?: Set<string>
   totalStationCount?: number
-  enemyPositionTimer: Phaser.Time.TimerEvent | null
 }
 
 // SpaceStationData is now imported from SpaceStationManager
@@ -240,8 +217,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     combatEnabled: true, // Start with combat enabled so enemies spawn when docking
     unlockedStations: new Set<string>(),
     dockSpawnedForStation: new Set<string>(),
-    totalStationCount: 0,
-    enemyPositionTimer: null
+    totalStationCount: 0
   }
 
   private xpTotal: number = 0
@@ -351,8 +327,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     
     // No initial enemy spawn - enemies only spawn when docking with stations
     
-    // Setup enemy position timer for radar system
-    this.setupEnemyPositionTimer()
+
     
     // Setup cleanup when scene is destroyed
     this.events.once('destroy', this.cleanup, this)
@@ -682,90 +657,10 @@ export class SkillSpaceScene extends Phaser.Scene {
     })
   }
 
-  private setupEnemyPositionTimer(): void {
-    // Create timer to emit enemy positions for radar system
-    this.state.enemyPositionTimer = this.time.addEvent({
-      delay: UI_CONFIG.radar.updateIntervalMs, // Configurable update rate
-      loop: true,
-      callback: () => this.emitEnemyPositions()
-    })
-  }
 
-  private emitEnemyPositions(): void {
-    // Only emit if we have player - always emit so radar can clear when no enemies
-    if (!this.state.enemyAI || !this.state.player) return
-
-    const activeEnemies = this.state.enemyAI.getActiveAgents()
-    
-    // Debug: Log how many enemies we have
-    console.log(`🎯 Radar Debug: Found ${activeEnemies.length} active enemies`)
-
-    // Determine radar center: use station position when docked, otherwise player position
-    let radarCenterPos: { x: number, y: number }
-    if (this.state.isDocked && this.state.dockedStation) {
-      // Use station position as radar center when docked
-      radarCenterPos = { 
-        x: (this.state.dockedStation as any).x, 
-        y: (this.state.dockedStation as any).y 
-      }
-      console.log(`🎯 Radar Debug: Using station center at (${radarCenterPos.x}, ${radarCenterPos.y})`)
-    } else {
-      // Use player position as radar center when flying around
-      radarCenterPos = { x: this.state.player.x, y: this.state.player.y }
-      console.log(`🎯 Radar Debug: Using player center at (${radarCenterPos.x}, ${radarCenterPos.y})`)
-    }
-
-    // Transform enemy positions to radar coordinates with range culling
-    const radarEnemies = activeEnemies
-      .filter(enemy => {
-        if (!enemy.sprite || !enemy.sprite.active) return false
-        
-        // Range culling: only include enemies within tactical radar range from radar center
-        const distance = Phaser.Math.Distance.Between(
-          enemy.sprite.x, enemy.sprite.y,
-          radarCenterPos.x, radarCenterPos.y
-        )
-        const inRange = distance <= 500
-        console.log(`🎯 Radar Debug: Enemy ${enemy.id} at distance ${distance.toFixed(1)} - ${inRange ? 'IN RANGE' : 'OUT OF RANGE'}`)
-        return inRange // Slightly larger than gameWorldRadius (450) for smooth transitions
-      })
-      .map(enemy => {
-        const worldPos = { x: enemy.sprite!.x, y: enemy.sprite!.y }
-        const radarPos = transformToRadarCoordinates(worldPos, radarCenterPos)
-        
-        console.log(`🎯 Radar Debug: Enemy ${enemy.id} world(${worldPos.x}, ${worldPos.y}) → radar(${radarPos.x}, ${radarPos.y})`)
-        
-        return {
-          id: enemy.id,
-          x: radarPos.x,
-          y: radarPos.y,
-          type: 'enemy-ship' as const
-        }
-      })
-
-    console.log(`🎯 Radar Debug: Emitting ${radarEnemies.length} enemies to radar`)
-
-    // Create the radar data payload with the radar center position
-    const radarData: EnemyRadarData = {
-      enemies: radarEnemies,
-      playerPosition: radarCenterPos, // This is now the radar center (station when docked, player when flying)
-      timestamp: this.time.now
-    }
-
-    console.log('🎯 RADAR DEBUG: Emitting enemy-positions-updated event:', radarData)
-
-    // Always emit the event for radar display (even if empty array)
-    gameEventBridge.emitGameEvent('game:enemy-positions-updated', radarData)
-  }
 
   private cleanup(): void {
-    // Clean up enemy position timer
-    if (this.state.enemyPositionTimer) {
-      this.state.enemyPositionTimer.remove(false)
-      this.state.enemyPositionTimer = null
-    }
-    
-    // Clean up other timers
+    // Clean up timers
     if (this.state.laserTimer) {
       this.state.laserTimer.remove(false)
       this.state.laserTimer = null
