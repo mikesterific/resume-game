@@ -538,6 +538,12 @@ export class EnemyAISystem {
   private fireAtTarget(agent: EnemyAgent, targetPos: Phaser.Math.Vector2, time: number): void {
     if (!this.state.enemyLasers) return
 
+    // Play laser sound effect for enemy firing  
+    const skillScene = this.state.scene as any
+    if (skillScene && typeof skillScene.playLaserSound === 'function') {
+      skillScene.playLaserSound()
+    }
+
     const position = new Phaser.Math.Vector2(agent.sprite.x, agent.sprite.y)
     const rotation = agent.sprite.rotation
 

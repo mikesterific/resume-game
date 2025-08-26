@@ -49,6 +49,8 @@ interface SceneState {
   unlockedStations?: Set<string>
   dockSpawnedForStation?: Set<string>
   totalStationCount?: number
+  laserSound?: Phaser.Sound.BaseSound
+  soundEnabled: boolean
 }
 
 // SpaceStationData is now imported from SpaceStationManager
@@ -217,7 +219,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     combatEnabled: true, // Start with combat enabled so enemies spawn when docking
     unlockedStations: new Set<string>(),
     dockSpawnedForStation: new Set<string>(),
-    totalStationCount: 0
+    totalStationCount: 0,
+    laserSound: undefined,
+    soundEnabled: true
   }
 
   private xpTotal: number = 0
@@ -255,6 +259,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Load hero explosion sprite
     this.load.image('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
     
+    // Load laser sound effect for space combat
+    this.load.audio('laserSound', 'src/assets/sound/laser.mp3')
+    
     // Add load event listeners for debugging
       // Intentionally silent
     
@@ -270,6 +277,9 @@ export class SkillSpaceScene extends Phaser.Scene {
   }
 
   create(): void {
+    // Initialize laser sound for space combat
+    this.initializeLaserSound()
+    
     // Initialize scene using functional approach
     this.initializeScene()
     
@@ -421,6 +431,32 @@ export class SkillSpaceScene extends Phaser.Scene {
     }
 
     // Enemy shield avoidance is now handled by the AI system
+  }
+
+  private initializeLaserSound(): void {
+    try {
+      // Get sound setting from GameUIScene  
+      const uiScene = this.scene.get('GameUIScene') as any
+      this.state.soundEnabled = uiScene && uiScene.soundEnabled !== undefined ? uiScene.soundEnabled : true
+      
+      // Create laser sound effect
+      this.state.laserSound = this.sound.add('laserSound', {
+        loop: false,
+        volume: 0.4 // Slightly louder for impact
+      })
+    } catch (error) {
+      console.warn('[SkillSpaceScene] Error initializing laser sound:', error)
+    }
+  }
+
+  public playLaserSound(): void {
+    if (this.state.soundEnabled && this.state.laserSound) {
+      try {
+        this.state.laserSound.play()
+      } catch (error) {
+        console.warn('[SkillSpaceScene] Error playing laser sound:', error)
+      }
+    }
   }
 
   // Handler methods for interactions
@@ -774,6 +810,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     if (!this.state.player) return
 
     const player = this.state.player
+
+    // Play laser sound effect for player firing
+    this.playLaserSound()
 
     const wingOffsetsLocal = [
       new Phaser.Math.Vector2(-18, 18),

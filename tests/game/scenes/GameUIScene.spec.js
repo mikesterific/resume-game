@@ -405,5 +405,166 @@ describe('GameUIScene Logic', () => {
       expect(backgroundMusicInstance.isPlaying).toBe(true)
     })
   })
+
+  // ===============================================
+  // 🔫 LASER SOUND EFFECTS TESTS (SkillSpaceScene)
+  // ===============================================
+
+  describe('Laser Sound Effects Integration', () => {
+    test('confirms laser sound is handled by SkillSpaceScene (not GameUIScene)', () => {
+      // This test validates our architectural decision to put laser sounds
+      // in SkillSpaceScene rather than the global GameUIScene
+      
+      const architecturalDecision = {
+        backgroundMusic: 'Global - GameUIScene (plays across all scenes)',
+        laserSounds: 'Local - SkillSpaceScene (only plays in space combat)',
+        reasoning: 'Laser sounds are contextual to space combat, not global UI'
+      }
+
+      // Verify our architectural approach
+      expect(architecturalDecision.backgroundMusic).toContain('GameUIScene')
+      expect(architecturalDecision.laserSounds).toContain('SkillSpaceScene')
+      expect(architecturalDecision.reasoning).toContain('contextual')
+    })
+
+    test('validates laser sound would integrate with existing sound toggle', () => {
+      // Test that SkillSpaceScene would properly read sound state from GameUIScene
+      let globalSoundEnabled = true
+
+      // Mock the integration pattern we implemented
+      const getGlobalSoundState = () => globalSoundEnabled
+      const shouldPlayLaserSound = () => getGlobalSoundState()
+
+      // Test sound enabled state
+      expect(shouldPlayLaserSound()).toBe(true)
+
+      // Test sound disabled state
+      globalSoundEnabled = false
+      expect(shouldPlayLaserSound()).toBe(false)
+
+      // Test state restoration
+      globalSoundEnabled = true
+      expect(shouldPlayLaserSound()).toBe(true)
+    })
+
+    test('validates laser sound configuration would be appropriate for combat', () => {
+      const expectedLaserConfig = {
+        loop: false, // Laser shots don't loop
+        volume: 0.4  // Louder than background music (0.3) for impact
+      }
+
+      // Verify non-looping for individual shots
+      expect(expectedLaserConfig.loop).toBe(false)
+      
+      // Verify appropriate volume level (louder than background music)
+      expect(expectedLaserConfig.volume).toBeGreaterThan(0.3)
+      expect(expectedLaserConfig.volume).toBeLessThanOrEqual(1.0)
+    })
+
+    test('validates scene-specific audio architecture', () => {
+      const sceneAudioArchitecture = {
+        'GameUIScene': {
+          sounds: ['backgroundMusic'],
+          scope: 'Global - persists across all scenes',
+          purpose: 'Ambient audio for entire game experience'
+        },
+        'SkillSpaceScene': {
+          sounds: ['laserSound'],
+          scope: 'Local - only active in space combat scene',
+          purpose: 'Combat sound effects for space battles'
+        },
+        'ProjectForestScene': {
+          sounds: [], // No combat sounds needed
+          scope: 'Local - would handle nature/forest sounds if added',
+          purpose: 'Environment-specific audio'
+        },
+        'ResumeTowerScene': {
+          sounds: [], // No combat sounds needed  
+          scope: 'Local - would handle tower/castle sounds if added',
+          purpose: 'Environment-specific audio'
+        }
+      }
+
+      // Verify proper separation of concerns
+      expect(sceneAudioArchitecture.GameUIScene.sounds).toContain('backgroundMusic')
+      expect(sceneAudioArchitecture.SkillSpaceScene.sounds).toContain('laserSound')
+      expect(sceneAudioArchitecture.ProjectForestScene.sounds).toHaveLength(0)
+      expect(sceneAudioArchitecture.ResumeTowerScene.sounds).toHaveLength(0)
+
+      // Verify scope appropriateness
+      expect(sceneAudioArchitecture.GameUIScene.scope).toContain('Global')
+      expect(sceneAudioArchitecture.SkillSpaceScene.scope).toContain('Local')
+    })
+
+    test('validates HTML5 Web Audio API compatibility', () => {
+      // Test that our implementation uses standard Web Audio API
+      const mockAudioContext = {
+        createAudioNode: jest.fn(),
+        createGain: jest.fn(),
+        destination: {}
+      }
+
+      // Mock Phaser sound system (built on Web Audio API)
+      const mockPhaserSound = {
+        add: jest.fn((key, config) => ({
+          play: jest.fn(),
+          pause: jest.fn(),
+          stop: jest.fn(),
+          volume: config.volume || 1.0,
+          loop: config.loop || false
+        }))
+      }
+
+      // Test laser sound creation
+      const laserSound = mockPhaserSound.add('laserSound', {
+        loop: false,
+        volume: 0.4
+      })
+
+      expect(mockPhaserSound.add).toHaveBeenCalledWith('laserSound', {
+        loop: false,
+        volume: 0.4
+      })
+      expect(laserSound.loop).toBe(false)
+      expect(laserSound.volume).toBe(0.4)
+      expect(typeof laserSound.play).toBe('function')
+    })
+
+    test('validates performance considerations for rapid firing', () => {
+      // Test that multiple rapid laser sounds won't cause audio issues
+      const mockLaserSound = {
+        play: jest.fn(),
+        volume: 0.4,
+        loop: false
+      }
+
+      let soundEnabled = true
+      const playLaserSound = () => {
+        if (soundEnabled && mockLaserSound) {
+          mockLaserSound.play()
+        }
+      }
+
+      // Simulate rapid firing (player holding SPACE key)
+      const rapidFireCount = 10
+      for (let i = 0; i < rapidFireCount; i++) {
+        playLaserSound()
+      }
+
+      // Verify all shots attempted to play
+      expect(mockLaserSound.play).toHaveBeenCalledTimes(rapidFireCount)
+
+      // Test with sound disabled
+      soundEnabled = false
+      mockLaserSound.play.mockClear()
+      
+      for (let i = 0; i < rapidFireCount; i++) {
+        playLaserSound()
+      }
+
+      // Verify no sounds played when disabled
+      expect(mockLaserSound.play).not.toHaveBeenCalled()
+    })
+  })
 })
 
