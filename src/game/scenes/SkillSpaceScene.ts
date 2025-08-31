@@ -50,6 +50,7 @@ interface SceneState {
   dockSpawnedForStation?: Set<string>
   totalStationCount?: number
   laserSound?: Phaser.Sound.BaseSound
+  enemyLaserSound?: Phaser.Sound.BaseSound
   soundEnabled: boolean
 }
 
@@ -221,6 +222,7 @@ export class SkillSpaceScene extends Phaser.Scene {
     dockSpawnedForStation: new Set<string>(),
     totalStationCount: 0,
     laserSound: undefined,
+    enemyLaserSound: undefined,
     soundEnabled: true
   }
 
@@ -259,8 +261,9 @@ export class SkillSpaceScene extends Phaser.Scene {
     // Load hero explosion sprite
     this.load.image('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
     
-    // Load laser sound effect for space combat
+    // Load laser sound effects for space combat
     this.load.audio('laserSound', 'src/assets/sound/laser.mp3')
+    this.load.audio('enemyLaserSound', 'src/assets/sound/enemy_laser.mp3')
     
     // Add load event listeners for debugging
       // Intentionally silent
@@ -439,10 +442,16 @@ export class SkillSpaceScene extends Phaser.Scene {
       const uiScene = this.scene.get('GameUIScene') as any
       this.state.soundEnabled = uiScene && uiScene.soundEnabled !== undefined ? uiScene.soundEnabled : true
       
-      // Create laser sound effect
+      // Create player laser sound effect
       this.state.laserSound = this.sound.add('laserSound', {
         loop: false,
         volume: 0.4 // Slightly louder for impact
+      })
+      
+      // Create enemy laser sound effect
+      this.state.enemyLaserSound = this.sound.add('enemyLaserSound', {
+        loop: false,
+        volume: 0.3 // Slightly quieter for enemy attacks
       })
     } catch (error) {
       console.warn('[SkillSpaceScene] Error initializing laser sound:', error)
@@ -455,6 +464,16 @@ export class SkillSpaceScene extends Phaser.Scene {
         this.state.laserSound.play()
       } catch (error) {
         console.warn('[SkillSpaceScene] Error playing laser sound:', error)
+      }
+    }
+  }
+
+  public playEnemyLaserSound(): void {
+    if (this.state.soundEnabled && this.state.enemyLaserSound) {
+      try {
+        this.state.enemyLaserSound.play()
+      } catch (error) {
+        console.warn('[SkillSpaceScene] Error playing enemy laser sound:', error)
       }
     }
   }
