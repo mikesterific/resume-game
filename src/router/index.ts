@@ -17,6 +17,24 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/AboutView.vue'),
     },
+    {
+      path: '/portfolio',
+      name: 'portfolio',
+      // Portfolio view showcasing projects and professional experience
+      component: () => import('../views/PortfolioView.vue'),
+    },
+    {
+      path: '/game',
+      name: 'game',
+      // Phaser Space Game - Interactive portfolio experience
+      component: () => import('../views/GameView.vue'),
+    },
+    {
+      path: '/museum',
+      name: 'museum',
+      // 3D Space Museum - Portfolio experience using Three.js
+      component: () => import('../views/MuseumView.vue'),
+    },
   ],
 })
 

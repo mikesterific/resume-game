@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import GameContainer from '@/components/game/GameContainer.vue'
+// App.vue - Main application shell
 </script>
 
 <template>
-    <GameContainer />
+  <router-view />
 </template>
 
 <style>
+/* Font imports for Portfolio Quest style guide */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;500;700&display=swap');
+
 /* Global styles for Portfolio Quest */
 * {
   margin: 0;
@@ -16,15 +19,15 @@ import GameContainer from '@/components/game/GameContainer.vue'
 
 html, body {
   height: 100%;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 #app {
   width: 100vw;
   height: 100vh;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Ensure game canvas fills container */
+/* Ensure game canvas fills container when in game view */
 canvas {
   display: block;
   touch-action: none; /* Prevent browser scrolling on touch */
