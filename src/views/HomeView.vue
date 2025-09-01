@@ -1,4 +1,4 @@
-<script lang="ts">
+aaaw<script lang="ts">
 import { defineComponent } from 'vue'
 
 export default defineComponent({

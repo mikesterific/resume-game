@@ -4,9 +4,10 @@
 
 ### Hybrid Game-Web Architecture
 - **Game Layer**: Phaser.js canvas for 2D world and character interactions
+- **3D Museum Layer**: Three.js WebGL for immersive 3D portfolio gallery
 - **UI Layer**: Vue 3 components for modals, forms, and traditional elements
 - **Data Layer**: JSON configuration for portfolio content and game world data
-- **Asset Layer**: Optimized sprite sheets, tilesets, and media files
+- **Asset Layer**: Optimized sprite sheets, tilesets, PBR textures, and media files
 
 ### Component Structure
 ```
@@ -16,6 +17,12 @@ Portfolio Quest/
 │   ├── Character Controller
 │   ├── Interaction System
 │   └── Animation Engine
+├── 3D Museum Engine (Three.js)
+│   ├── Circular Gallery Architecture
+│   ├── First-Person Controls (PointerLockControls)
+│   ├── PBR Material System
+│   ├── Professional Gallery Lighting
+│   └── Interactive Portfolio Frames
 ├── UI Framework (Vue 3)
 │   ├── Modal Components (project details)
 │   ├── Navigation Components
@@ -23,6 +30,7 @@ Portfolio Quest/
 └── Data Management
     ├── Portfolio JSON data
     ├── Game Configuration
+    ├── Professional Texture Assets
     └── Asset Manifests
 ```
 
@@ -35,6 +43,14 @@ Portfolio Quest/
 - **Command Pattern**: User input handling and game actions
 - **Functional Factory Pattern**: Pure creation functions for game entities
 - **Shared Utility Pattern**: Reusable functions across multiple scenes
+
+### 3D Museum Design Patterns
+- **Circular Architecture Pattern**: Radial layout for optimal portfolio viewing
+- **Professional Gallery Lighting**: Ambient + spotlights for artwork illumination
+- **PBR Material System**: Physically Based Rendering for realistic surfaces
+- **Modular Asset Loading**: Professional textures from established libraries
+- **First-Person Interaction**: PointerLockControls for immersive navigation
+- **Event-Driven Modals**: Vue emit system for portfolio piece interactions
 
 ### Web Design Patterns
 - **Composition API**: Vue 3's modern approach for component logic
@@ -150,6 +166,99 @@ The Phaser canvas positioning follows a precise hierarchy for full-viewport game
 - **`.game-container`**: Outer wrapper (100vw×100vh, relative positioning, overflow:hidden)
 - **`#game-container.game-canvas`**: Phaser parent div (100% of wrapper, direct child)
 - **Canvas Element**: Injected by Phaser, scaled/centered within parent div
+
+## 3D Museum Implementation Lessons
+
+### Technical Architecture Decisions
+
+#### Three.js Integration with Vue 3
+- **Component Structure**: SpaceMuseum.vue as standalone Three.js component
+- **Lifecycle Management**: onMounted/onUnmounted for proper cleanup
+- **State Management**: Reactive refs for UI state, internal object for 3D state
+- **Event System**: Vue emit events for portfolio interactions (independent from Phaser)
+
+#### Asset Management Strategy
+- **Professional Texture Sources**: AmbientCG and Polyhaven for high-quality PBR materials
+- **Asset Organization**: `/public/textures/{floor,ceiling,walls}/` structure
+- **Texture Loading**: THREE.TextureLoader with proper wrapping and repeat settings
+- **Performance Optimization**: 1K textures for web performance vs 4K for quality
+
+#### Circular Museum Architecture
+```javascript
+// Key architectural decisions:
+const radius = 30              // Museum size for comfortable navigation
+const wallHeight = 12          // Human-scale proportions
+const wallThickness = 0.5      // Realistic wall depth
+const frameSpacing = automatic // Even distribution around circle
+```
+
+### Material System Lessons
+
+#### PBR Material Implementation
+- **MeshStandardMaterial**: Better than MeshLambertMaterial for realistic lighting
+- **Texture Mapping**: Proper UV wrapping with RepeatWrapping for seamless tiling
+- **Professional Lighting**: Ambient (0.6) + Point lights (2.0 intensity) for gallery feel
+
+#### Lighting Best Practices
+- **Gallery Lighting Pattern**: Central illumination + perimeter lights + accent spotlights
+- **Shadow Configuration**: 2048x2048 shadow maps for quality vs performance balance
+- **Color Temperature**: White light (0xffffff) for accurate portfolio color representation
+
+### Interaction System Patterns
+
+#### First-Person Controls
+- **PointerLockControls**: Industry standard for FPS navigation in Three.js
+- **Movement Physics**: Velocity-based movement with friction for natural feel
+- **Modal Integration**: Release pointer lock when opening portfolio modals
+
+#### Event-Driven Architecture
+```javascript
+// Clean separation between 3D engine and Vue UI:
+emit('project-selected', { projectId })  // To parent component
+emit('exit-museum')                      // For navigation
+```
+
+### Asset Acquisition Strategy
+
+#### Professional Asset Sources
+1. **Clone Reference Projects**: Extract working assets from established galleries
+2. **Professional Libraries**: AmbientCG (free registration) and Polyhaven (free)
+3. **Fallback Strategy**: Generate procedural textures if downloads fail
+4. **Version Control**: Handle Git LFS issues with large texture files
+
+#### File Organization Lessons
+```
+public/textures/
+├── floor/diffuse.jpg     (Wood texture - most visible impact)
+├── ceiling/diffuse.jpg   (Office ceiling - professional feel)
+└── walls/diffuse.jpg     (Wall texture - gallery atmosphere)
+```
+
+### Performance Optimization Patterns
+
+#### Texture Optimization
+- **Resolution Strategy**: Start with 1K, upgrade to 2K only if needed
+- **Format Choice**: JPG for diffuse maps, PNG for normal/alpha maps
+- **Compression**: Balance quality vs loading time for web delivery
+
+#### Rendering Optimization
+- **Geometry Efficiency**: 64 segments for smooth circles without excess polygons
+- **Material Sharing**: Reuse materials where possible to reduce draw calls
+- **Shadow Optimization**: Selective shadow casting for performance
+
+### Integration Patterns
+
+#### Vue + Three.js Best Practices
+- **Component Isolation**: Keep Three.js logic contained within Vue component
+- **Cleanup Management**: Proper disposal of Three.js resources on component unmount
+- **State Synchronization**: Use Vue reactive refs for UI state, internal objects for 3D state
+- **Modal Coordination**: Prevent 3D interactions when Vue modals are open
+
+#### Multi-Engine Architecture
+- **Independent Systems**: Phaser game and Three.js museum as separate experiences
+- **Shared Assets**: Reuse portfolio data across both engines
+- **Routing Strategy**: Vue Router for navigation between 2D game and 3D museum
+- **Event Isolation**: Separate event systems prevent cross-contamination
 - **Global CSS**: `html,body` at 100% height, `overflow:hidden` prevents scrollbars
 
 #### Visual Positioning Results

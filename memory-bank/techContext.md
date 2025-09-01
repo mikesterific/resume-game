@@ -27,6 +27,13 @@ npm run dev
 
 ## Core Technologies
 
+### 3D Graphics Engine
+- **Three.js**: WebGL-based 3D graphics library for the space museum
+  - **Version**: Latest (installed via npm)
+  - **Features**: PBR materials, shadow mapping, first-person controls
+  - **Integration**: Standalone Vue component with proper lifecycle management
+  - **Performance**: Optimized for web with 1K textures and efficient geometry
+
 ### Frontend Framework
 - **Vue 3** with Composition API
 - **TypeScript** for type safety
