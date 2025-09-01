@@ -62,6 +62,8 @@ interface MuseumState {
     gravity: number
     jumpSpeed: number
     groundHeight: number
+    jumpsRemaining: number
+    maxJumps: number
   }
 }
 
@@ -102,7 +104,9 @@ export default defineComponent({
         isGrounded: true,
         gravity: 7.84, // 0.8x Earth gravity for space station feel
         jumpSpeed: 8,
-        groundHeight: 1.8 // Human eye height
+        groundHeight: 1.8, // Human eye height
+        jumpsRemaining: 2, // Start with full jumps available
+        maxJumps: 2 // Allow double jump
       }
     }
 
@@ -552,7 +556,7 @@ export default defineComponent({
           break
         case 'Space':
           event.preventDefault() // Prevent page scroll
-          if (state.physics.isGrounded) {
+          if (state.physics.jumpsRemaining > 0) {
             initiateJump()
           }
           break
@@ -626,8 +630,11 @@ export default defineComponent({
 
     // Jump mechanics
     const initiateJump = (): void => {
-      if (state.physics.isGrounded) {
-        state.physics.velocityY = state.physics.jumpSpeed
+      if (state.physics.jumpsRemaining > 0) {
+        // Second jump gets a slight boost for extra fun
+        const jumpMultiplier = state.physics.jumpsRemaining === 1 ? 1.1 : 1.0
+        state.physics.velocityY = state.physics.jumpSpeed * jumpMultiplier
+        state.physics.jumpsRemaining--
         state.physics.isGrounded = false
       }
     }
@@ -647,6 +654,7 @@ export default defineComponent({
         state.camera.position.y = state.physics.groundHeight
         state.physics.velocityY = 0
         state.physics.isGrounded = true
+        state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
       }
 
       // Ceiling collision (wallHeight = 12)
