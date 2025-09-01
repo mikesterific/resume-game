@@ -16,8 +16,8 @@
       
       <!-- Instructions -->
       <div class="instructions">
-        <p>WASD: Move | Mouse: Look Around | Click: Interact with Portfolio Pieces</p>
-        <p>ESC: Exit Museum</p>
+        <p>WASD: Move | Mouse: Look Around | SPACE: Jump | Click: Interact with Portfolio Pieces</p>
+        <p>ESC: Exit Museum | Gravity: 0.8x Earth (Space Station)</p>
       </div>
       
       <!-- Loading Screen -->
@@ -54,7 +54,15 @@ interface MuseumState {
   moveBackward: boolean
   moveLeft: boolean
   moveRight: boolean
+  jump: boolean
   velocity: THREE.Vector3
+  physics: {
+    velocityY: number
+    isGrounded: boolean
+    gravity: number
+    jumpSpeed: number
+    groundHeight: number
+  }
 }
 
 export default defineComponent({
@@ -87,7 +95,15 @@ export default defineComponent({
       moveBackward: false,
       moveLeft: false,
       moveRight: false,
-      velocity: new THREE.Vector3()
+      jump: false,
+      velocity: new THREE.Vector3(),
+      physics: {
+        velocityY: 0,
+        isGrounded: true,
+        gravity: 7.84, // 0.8x Earth gravity for space station feel
+        jumpSpeed: 8,
+        groundHeight: 1.8 // Human eye height
+      }
     }
 
     // Initialize the 3D museum
@@ -534,6 +550,12 @@ export default defineComponent({
         case 'KeyD':
           state.moveRight = true
           break
+        case 'Space':
+          event.preventDefault() // Prevent page scroll
+          if (state.physics.isGrounded) {
+            initiateJump()
+          }
+          break
       }
     }
 
@@ -602,6 +624,39 @@ export default defineComponent({
       emit('exit-museum')
     }
 
+    // Jump mechanics
+    const initiateJump = (): void => {
+      if (state.physics.isGrounded) {
+        state.physics.velocityY = state.physics.jumpSpeed
+        state.physics.isGrounded = false
+      }
+    }
+
+    // Update physics
+    const updatePhysics = (delta: number): void => {
+      if (!state.camera) return
+
+      // Apply gravity
+      if (!state.physics.isGrounded) {
+        state.physics.velocityY -= state.physics.gravity * delta
+        state.camera.position.y += state.physics.velocityY * delta
+      }
+
+      // Ground collision detection
+      if (state.camera.position.y <= state.physics.groundHeight) {
+        state.camera.position.y = state.physics.groundHeight
+        state.physics.velocityY = 0
+        state.physics.isGrounded = true
+      }
+
+      // Ceiling collision (wallHeight = 12)
+      const ceilingHeight = 11.5 // Leave some headroom
+      if (state.camera.position.y >= ceilingHeight) {
+        state.camera.position.y = ceilingHeight
+        state.physics.velocityY = 0 // Stop upward movement
+      }
+    }
+
     // Animation loop
     const animate = (): void => {
       if (!state.scene || !state.camera || !state.renderer || !state.controls || !state.clock) return
@@ -610,7 +665,10 @@ export default defineComponent({
 
       const delta = state.clock.getDelta()
 
-      // Handle movement
+      // Update physics (gravity and jumping)
+      updatePhysics(delta)
+
+      // Handle horizontal movement
       state.velocity.x -= state.velocity.x * 10.0 * delta
       state.velocity.z -= state.velocity.z * 10.0 * delta
 
