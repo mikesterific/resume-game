@@ -847,8 +847,8 @@ export default defineComponent({
       const speed = 20.0 * state.currentSpeedMultiplier
       if (state.moveForward) state.velocity.z -= speed * delta
       if (state.moveBackward) state.velocity.z += speed * delta
-      if (state.moveLeft) state.velocity.x += speed * delta
-      if (state.moveRight) state.velocity.x -= speed * delta
+      if (state.moveLeft) state.velocity.x -= speed * delta
+      if (state.moveRight) state.velocity.x += speed * delta
 
       // Apply movement using the yaw object's local directions
       const direction = new THREE.Vector3()
