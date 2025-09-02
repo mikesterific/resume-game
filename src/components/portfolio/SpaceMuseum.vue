@@ -844,7 +844,7 @@ export default defineComponent({
       state.velocity.x -= state.velocity.x * 10.0 * delta
       state.velocity.z -= state.velocity.z * 10.0 * delta
 
-      const speed = 20.0 * state.currentSpeedMultiplier
+      const speed = 24.0 * state.currentSpeedMultiplier
       if (state.moveForward) state.velocity.z -= speed * delta
       if (state.moveBackward) state.velocity.z += speed * delta
       if (state.moveLeft) state.velocity.x -= speed * delta
