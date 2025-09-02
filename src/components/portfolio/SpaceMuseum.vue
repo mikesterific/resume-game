@@ -16,8 +16,8 @@
       
       <!-- Instructions -->
       <div class="instructions">
-        <p>WASD: Move | Mouse: Look Around | SPACE: Jump | Click: Interact with Portfolio Pieces</p>
-        <p>ESC: Exit Museum | Gravity: 0.8x Earth (Space Station)</p>
+        <p>WASD: Move | Mouse: Look Around | SPACE: Jump | SHIFT: Hold to Run</p>
+        <p>Click: Interact with Portfolio Pieces | ESC: Exit Museum | Gravity: 0.8x Earth (Space Station)</p>
       </div>
       
       <!-- Loading Screen -->
@@ -56,6 +56,11 @@ interface MuseumState {
   moveRight: boolean
   jump: boolean
   velocity: THREE.Vector3
+  // Running mechanic state
+  isRunning: boolean
+  currentSpeedMultiplier: number
+  targetSpeedMultiplier: number
+  speedTransitionRate: number
   physics: {
     velocityY: number
     isGrounded: boolean
@@ -99,6 +104,11 @@ export default defineComponent({
       moveRight: false,
       jump: false,
       velocity: new THREE.Vector3(),
+      // Running mechanic state
+      isRunning: false,
+      currentSpeedMultiplier: 1.0,
+      targetSpeedMultiplier: 1.0,
+      speedTransitionRate: 8.0,
       physics: {
         velocityY: 0,
         isGrounded: true,
@@ -560,6 +570,13 @@ export default defineComponent({
             initiateJump()
           }
           break
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          if (!state.isRunning) {
+            state.isRunning = true
+            state.targetSpeedMultiplier = 2.2
+          }
+          break
       }
     }
 
@@ -580,6 +597,11 @@ export default defineComponent({
         case 'ArrowRight':
         case 'KeyD':
           state.moveRight = false
+          break
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          state.isRunning = false
+          state.targetSpeedMultiplier = 1.0
           break
       }
     }
@@ -676,11 +698,18 @@ export default defineComponent({
       // Update physics (gravity and jumping)
       updatePhysics(delta)
 
+      // Update running speed transition
+      state.currentSpeedMultiplier = THREE.MathUtils.lerp(
+        state.currentSpeedMultiplier,
+        state.targetSpeedMultiplier,
+        state.speedTransitionRate * delta
+      )
+
       // Handle horizontal movement
       state.velocity.x -= state.velocity.x * 10.0 * delta
       state.velocity.z -= state.velocity.z * 10.0 * delta
 
-      const speed = 20.0
+      const speed = 20.0 * state.currentSpeedMultiplier
       if (state.moveForward) state.velocity.z -= speed * delta
       if (state.moveBackward) state.velocity.z += speed * delta
       if (state.moveLeft) state.velocity.x += speed * delta
