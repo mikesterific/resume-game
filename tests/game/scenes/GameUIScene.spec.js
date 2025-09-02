@@ -4,86 +4,434 @@ const gameEventBridge = require('@/game/GameEventBridge').default
 describe('GameUIScene Logic', () => {
   afterEach(() => {
     gameEventBridge.removeAllGameListeners()
+    jest.clearAllMocks()
   })
 
-  test('game event bridge integration works', () => {
-    const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
-    
-    // Test events that the UI scene would emit
-    gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'soundEnabled', value: false })
-    gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'combatEnabled', value: true })
-    gameEventBridge.emitGameEvent('scene:starting', { sceneName: 'SkillSpaceScene' })
-    
-    expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { key: 'soundEnabled', value: false })
-    expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { key: 'combatEnabled', value: true })
-    expect(eventSpy).toHaveBeenCalledWith('scene:starting', { sceneName: 'SkillSpaceScene' })
-    
-    eventSpy.mockRestore()
-  })
+  // ===============================================
+  // 🎮 SHALLOW MOUNT BUSINESS LOGIC TESTS
+  // ===============================================
 
-  test('xp calculation logic works correctly', () => {
-    // Test the XP display logic that would be used in the UI
-    const formatXP = (amount) => `XP: ${amount}`
-    const calculateXPGain = (baseXP, multiplier = 1) => baseXP * multiplier
-    
-    expect(formatXP(42)).toBe('XP: 42')
-    expect(formatXP(0)).toBe('XP: 0')
-    expect(calculateXPGain(10, 1.5)).toBe(15)
-    expect(calculateXPGain(5)).toBe(5)
-  })
+  describe('Business Logic (Shallow Tests)', () => {
+    let mockLocalStorage
 
-  test('toggle state logic works correctly', () => {
-    // Test the toggle logic that would be used by UI buttons
-    let soundEnabled = true
-    let combatEnabled = false
-    
-    const toggleSound = () => { soundEnabled = !soundEnabled; return soundEnabled }
-    const toggleCombat = () => { combatEnabled = !combatEnabled; return combatEnabled }
-    
-    expect(toggleSound()).toBe(false)
-    expect(toggleSound()).toBe(true)
-    expect(toggleCombat()).toBe(true)
-    expect(toggleCombat()).toBe(false)
-  })
+    beforeEach(() => {
+      mockLocalStorage = {
+        getItem: jest.fn(),
+        setItem: jest.fn(),
+        removeItem: jest.fn()
+      }
+      global.localStorage = mockLocalStorage
+    })
 
-  test('scene state tracking works', () => {
-    // Test scene state that would be managed by the UI
-    const sceneStates = {
-      currentScene: 'GameUIScene',
-      previousScene: null,
-      isTransitioning: false
-    }
-    
-    const updateSceneState = (newScene) => {
-      sceneStates.previousScene = sceneStates.currentScene
-      sceneStates.currentScene = newScene
-      sceneStates.isTransitioning = true
-    }
-    
-    updateSceneState('SkillSpaceScene')
-    expect(sceneStates.currentScene).toBe('SkillSpaceScene')
-    expect(sceneStates.previousScene).toBe('GameUIScene')
-    expect(sceneStates.isTransitioning).toBe(true)
-  })
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
 
-  test('event listener management works', () => {
-    const listeners = new Map()
-    
-    const addListener = (event, callback) => {
-      if (!listeners.has(event)) listeners.set(event, [])
-      listeners.get(event).push(callback)
-    }
-    
-    const removeAllListeners = () => {
-      listeners.clear()
-    }
-    
-    addListener('test-event', () => {})
-    addListener('test-event', () => {})
-    expect(listeners.get('test-event').length).toBe(2)
-    
-    removeAllListeners()
-    expect(listeners.size).toBe(0)
+    test('combat button text generation logic', () => {
+      const getCombatButtonText = (combatEnabled) => {
+        return combatEnabled ? '⚔️ Enemies: ON' : '🛡️ Enemies: OFF'
+      }
+
+      expect(getCombatButtonText(true)).toBe('⚔️ Enemies: ON')
+      expect(getCombatButtonText(false)).toBe('🛡️ Enemies: OFF')
+    })
+
+    test('combat button color generation logic', () => {
+      const getCombatButtonColor = (combatEnabled) => {
+        return combatEnabled ? '#e74c3c' : '#95a5a6'
+      }
+
+      expect(getCombatButtonColor(true)).toBe('#e74c3c')
+      expect(getCombatButtonColor(false)).toBe('#95a5a6')
+    })
+
+    test('scene display name mapping logic', () => {
+      const sceneDisplayNames = {
+        'SkillSpaceScene': '🚀 Skills Command Center',
+        'ProjectForestScene': '🌲 Project Forest',
+        'ResumeTowerScene': '🏰 Résumé Tower'
+      }
+
+      const getDisplayName = (sceneName) => {
+        return sceneDisplayNames[sceneName] || sceneName
+      }
+
+      expect(getDisplayName('SkillSpaceScene')).toBe('🚀 Skills Command Center')
+      expect(getDisplayName('ProjectForestScene')).toBe('🌲 Project Forest')
+      expect(getDisplayName('ResumeTowerScene')).toBe('🏰 Résumé Tower')
+      expect(getDisplayName('UnknownScene')).toBe('UnknownScene')
+    })
+
+    test('localStorage initialization logic for combat settings', () => {
+      const initializeCombatSetting = () => {
+        const stored = mockLocalStorage.getItem('portfolioQuest_combatEnabled')
+        return stored ? JSON.parse(stored) : false
+      }
+
+      // Test default value (false) when no stored value
+      mockLocalStorage.getItem.mockReturnValue(null)
+      expect(initializeCombatSetting()).toBe(false)
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('portfolioQuest_combatEnabled')
+
+      // Test reading stored true value
+      mockLocalStorage.getItem.mockReturnValue('true')
+      expect(initializeCombatSetting()).toBe(true)
+
+      // Test reading stored false value
+      mockLocalStorage.getItem.mockReturnValue('false')
+      expect(initializeCombatSetting()).toBe(false)
+    })
+
+    test('localStorage initialization logic for sound settings', () => {
+      const initializeSoundSetting = () => {
+        const stored = mockLocalStorage.getItem('portfolioQuest_soundEnabled')
+        return stored ? JSON.parse(stored) : true
+      }
+
+      // Test default value (true) when no stored value
+      mockLocalStorage.getItem.mockReturnValue(null)
+      expect(initializeSoundSetting()).toBe(true)
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('portfolioQuest_soundEnabled')
+
+      // Test reading stored false value
+      mockLocalStorage.getItem.mockReturnValue('false')
+      expect(initializeSoundSetting()).toBe(false)
+
+      // Test reading stored true value
+      mockLocalStorage.getItem.mockReturnValue('true')
+      expect(initializeSoundSetting()).toBe(true)
+    })
+
+    test('combat toggle state management logic', () => {
+      let combatEnabled = false
+      
+      const toggleCombatSetting = () => {
+        combatEnabled = !combatEnabled
+        mockLocalStorage.setItem('portfolioQuest_combatEnabled', JSON.stringify(combatEnabled))
+        
+        // Emit the change event
+        gameEventBridge.emitGameEvent('ui:setting-changed', {
+          key: 'combatEnabled',
+          value: combatEnabled
+        })
+        
+        return combatEnabled
+      }
+
+      const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+
+      // Toggle from false to true
+      expect(toggleCombatSetting()).toBe(true)
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('portfolioQuest_combatEnabled', 'true')
+      expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', {
+        key: 'combatEnabled',
+        value: true
+      })
+
+      // Toggle from true to false
+      expect(toggleCombatSetting()).toBe(false)
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('portfolioQuest_combatEnabled', 'false')
+      expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', {
+        key: 'combatEnabled',
+        value: false
+      })
+
+      eventSpy.mockRestore()
+    })
+
+    test('sound toggle state management logic', () => {
+      let soundEnabled = true
+      const mockBackgroundMusic = {
+        resume: jest.fn(),
+        pause: jest.fn()
+      }
+
+      const toggleSound = () => {
+        const newSoundState = !soundEnabled
+        soundEnabled = newSoundState
+
+        // Control background music
+        if (mockBackgroundMusic) {
+          if (newSoundState) {
+            mockBackgroundMusic.resume()
+          } else {
+            mockBackgroundMusic.pause()
+          }
+        }
+
+        // Persist setting
+        mockLocalStorage.setItem('portfolioQuest_soundEnabled', JSON.stringify(newSoundState))
+
+        // Emit event
+        gameEventBridge.emitGameEvent('ui:setting-changed', { 
+          key: 'soundEnabled', 
+          value: newSoundState 
+        })
+
+        return newSoundState
+      }
+
+      const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+
+      // Test turning sound OFF
+      const newState1 = toggleSound()
+      expect(newState1).toBe(false)
+      expect(mockBackgroundMusic.pause).toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('portfolioQuest_soundEnabled', 'false')
+      expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { 
+        key: 'soundEnabled', 
+        value: false 
+      })
+
+      // Test turning sound ON
+      jest.clearAllMocks()
+      const newState2 = toggleSound()
+      expect(newState2).toBe(true)
+      expect(mockBackgroundMusic.resume).toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('portfolioQuest_soundEnabled', 'true')
+      expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { 
+        key: 'soundEnabled', 
+        value: true 
+      })
+
+      eventSpy.mockRestore()
+    })
+
+    test('button update safety checks logic', () => {
+      const updateButtonSafely = (button, updateFn) => {
+        if (!button || !button.scene || !button.active) {
+          console.warn('[GameUIScene] Button is not available, skipping update')
+          return false
+        }
+        
+        try {
+          updateFn(button)
+          return true
+        } catch (error) {
+          console.warn('[GameUIScene] Error updating button:', error)
+          return false
+        }
+      }
+
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      const mockUpdate = jest.fn()
+
+      // Test with null button
+      expect(updateButtonSafely(null, mockUpdate)).toBe(false)
+      expect(consoleWarnSpy).toHaveBeenCalledWith('[GameUIScene] Button is not available, skipping update')
+
+      // Test with inactive button
+      expect(updateButtonSafely({ scene: null, active: false }, mockUpdate)).toBe(false)
+
+      // Test with valid button
+      const validButton = { scene: { active: true }, active: true }
+      expect(updateButtonSafely(validButton, mockUpdate)).toBe(true)
+      expect(mockUpdate).toHaveBeenCalledWith(validButton)
+
+      // Test with error in update function
+      const errorUpdate = jest.fn(() => { throw new Error('Update failed') })
+      expect(updateButtonSafely(validButton, errorUpdate)).toBe(false)
+      expect(consoleWarnSpy).toHaveBeenCalledWith('[GameUIScene] Error updating button:', expect.any(Error))
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    test('background music initialization logic', () => {
+      const mockSoundSystem = {
+        add: jest.fn(() => ({
+          play: jest.fn(),
+          pause: jest.fn(),
+          resume: jest.fn()
+        }))
+      }
+
+      const initializeBackgroundMusic = (soundSystem, soundEnabled) => {
+        try {
+          const backgroundMusic = soundSystem.add('backgroundMusic', {
+            loop: true,
+            volume: 0.3
+          })
+
+          if (soundEnabled && backgroundMusic) {
+            backgroundMusic.play()
+          }
+
+          return backgroundMusic
+        } catch (error) {
+          console.warn('[GameUIScene] Error initializing background music:', error)
+          return null
+        }
+      }
+
+      // Test successful initialization with sound enabled
+      const music = initializeBackgroundMusic(mockSoundSystem, true)
+      
+      expect(mockSoundSystem.add).toHaveBeenCalledWith('backgroundMusic', {
+        loop: true,
+        volume: 0.3
+      })
+      expect(music.play).toHaveBeenCalled()
+
+      // Test initialization with sound disabled
+      jest.clearAllMocks()
+      const musicDisabled = initializeBackgroundMusic(mockSoundSystem, false)
+      
+      expect(mockSoundSystem.add).toHaveBeenCalled()
+      expect(musicDisabled.play).not.toHaveBeenCalled()
+    })
+
+    test('event handler setup logic', () => {
+      const eventHandlers = new Map()
+      
+      const setupEventListeners = () => {
+        // Scene starting handler
+        gameEventBridge.onGameEvent('game:scene-starting', (data) => {
+          eventHandlers.set('scene-starting', data.sceneName)
+          gameEventBridge.emitGameEvent('game:scene-changed', { sceneName: data.sceneName })
+        })
+
+        // Modal handlers
+        gameEventBridge.onGameEvent('ui:modal-opened', (data) => {
+          eventHandlers.set('modal-state', 'opened')
+        })
+
+        gameEventBridge.onGameEvent('ui:modal-closed', () => {
+          eventHandlers.set('modal-state', 'closed')
+        })
+
+        // Settings handlers
+        gameEventBridge.onGameEvent('ui:setting-changed', (data) => {
+          eventHandlers.set(`setting-${data.key}`, data.value)
+        })
+      }
+
+      const onGameEventSpy = jest.spyOn(gameEventBridge, 'onGameEvent')
+      const emitGameEventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+
+      setupEventListeners()
+
+      // Verify event listeners are registered
+      expect(onGameEventSpy).toHaveBeenCalledWith('game:scene-starting', expect.any(Function))
+      expect(onGameEventSpy).toHaveBeenCalledWith('ui:modal-opened', expect.any(Function))
+      expect(onGameEventSpy).toHaveBeenCalledWith('ui:modal-closed', expect.any(Function))
+      expect(onGameEventSpy).toHaveBeenCalledWith('ui:setting-changed', expect.any(Function))
+
+      // Test scene starting handler
+      gameEventBridge.emitGameEvent('game:scene-starting', { sceneName: 'SkillSpaceScene' })
+      expect(eventHandlers.get('scene-starting')).toBe('SkillSpaceScene')
+      expect(emitGameEventSpy).toHaveBeenCalledWith('game:scene-changed', { sceneName: 'SkillSpaceScene' })
+
+      // Test modal handlers
+      gameEventBridge.emitGameEvent('ui:modal-opened', { type: 'portfolio' })
+      expect(eventHandlers.get('modal-state')).toBe('opened')
+
+      gameEventBridge.emitGameEvent('ui:modal-closed')
+      expect(eventHandlers.get('modal-state')).toBe('closed')
+
+      // Test settings handler
+      gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'soundEnabled', value: false })
+      expect(eventHandlers.get('setting-soundEnabled')).toBe(false)
+
+      onGameEventSpy.mockRestore()
+      emitGameEventSpy.mockRestore()
+    })
+
+    test('skip game button handler logic', () => {
+      const handleSkipGame = () => {
+        gameEventBridge.emitGameEvent('ui:modal-opened', { type: 'traditional-portfolio' })
+      }
+
+      const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+      
+      handleSkipGame()
+      expect(eventSpy).toHaveBeenCalledWith('ui:modal-opened', { type: 'traditional-portfolio' })
+
+      eventSpy.mockRestore()
+    })
+
+    test('old combat button text parsing logic', () => {
+      const parseCurrentCombatState = (buttonText) => {
+        return buttonText.includes('ON')
+      }
+
+      const toggleOldCombatButton = (currentText) => {
+        const currentCombatState = parseCurrentCombatState(currentText)
+        const newCombatState = !currentCombatState
+        
+        gameEventBridge.emitGameEvent('ui:setting-changed', { 
+          key: 'combatEnabled', 
+          value: newCombatState 
+        })
+        
+        return newCombatState
+      }
+
+      const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+
+      // Test parsing ON state
+      expect(parseCurrentCombatState('⚔️ Combat: ON')).toBe(true)
+      expect(parseCurrentCombatState('🛡️ Combat: OFF')).toBe(false)
+
+      // Test toggle from ON to OFF
+      expect(toggleOldCombatButton('⚔️ Combat: ON')).toBe(false)
+      expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { 
+        key: 'combatEnabled', 
+        value: false 
+      })
+
+      eventSpy.mockRestore()
+    })
+
+    test('progress completion toast display logic', () => {
+      const mockScene = {
+        add: {
+          text: jest.fn(() => ({
+            setOrigin: jest.fn(function() { return this }),
+            destroy: jest.fn()
+          }))
+        },
+        tweens: {
+          add: jest.fn()
+        },
+        scale: { width: 800 }
+      }
+
+      const showCompletionToast = (scene, message) => {
+        try {
+          const toast = scene.add.text(scene.scale.width / 2, 80, message, {
+            fontSize: '20px',
+            color: '#2ecc71',
+            backgroundColor: '#2c3e50aa',
+            padding: { x: 14, y: 8 }
+          }).setOrigin(0.5)
+
+          scene.tweens.add({
+            targets: toast,
+            y: toast.y - 30,
+            alpha: { from: 1, to: 0 },
+            duration: 1400,
+            ease: 'Power2.easeOut',
+            onComplete: () => toast.destroy()
+          })
+
+          return toast
+        } catch (error) {
+          console.warn('[GameUIScene] Error showing completion toast:', error)
+          return null
+        }
+      }
+
+      const toast = showCompletionToast(mockScene, 'All stations unlocked!')
+      
+      expect(mockScene.add.text).toHaveBeenCalledWith(400, 80, 'All stations unlocked!', {
+        fontSize: '20px',
+        color: '#2ecc71',
+        backgroundColor: '#2c3e50aa',
+        padding: { x: 14, y: 8 }
+      })
+      expect(mockScene.tweens.add).toHaveBeenCalled()
+      expect(toast.setOrigin).toHaveBeenCalledWith(0.5)
+    })
   })
 
   // ===============================================
@@ -565,6 +913,90 @@ describe('GameUIScene Logic', () => {
       // Verify no sounds played when disabled
       expect(mockLaserSound.play).not.toHaveBeenCalled()
     })
+  })
+
+  // ===============================================
+  // 🎵 LEGACY BUSINESS LOGIC TESTS (PRESERVED)
+  // ===============================================
+
+  test('game event bridge integration works', () => {
+    const eventSpy = jest.spyOn(gameEventBridge, 'emitGameEvent')
+    
+    // Test events that the UI scene would emit
+    gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'soundEnabled', value: false })
+    gameEventBridge.emitGameEvent('ui:setting-changed', { key: 'combatEnabled', value: true })
+    gameEventBridge.emitGameEvent('game:scene-starting', { sceneName: 'SkillSpaceScene' })
+    
+    expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { key: 'soundEnabled', value: false })
+    expect(eventSpy).toHaveBeenCalledWith('ui:setting-changed', { key: 'combatEnabled', value: true })
+    expect(eventSpy).toHaveBeenCalledWith('game:scene-starting', { sceneName: 'SkillSpaceScene' })
+    
+    eventSpy.mockRestore()
+  })
+
+  test('xp calculation logic works correctly', () => {
+    // Test the XP display logic that would be used in the UI
+    const formatXP = (amount) => `XP: ${amount}`
+    const calculateXPGain = (baseXP, multiplier = 1) => baseXP * multiplier
+    
+    expect(formatXP(42)).toBe('XP: 42')
+    expect(formatXP(0)).toBe('XP: 0')
+    expect(calculateXPGain(10, 1.5)).toBe(15)
+    expect(calculateXPGain(5)).toBe(5)
+  })
+
+  test('toggle state logic works correctly', () => {
+    // Test the toggle logic that would be used by UI buttons
+    let soundEnabled = true
+    let combatEnabled = false
+    
+    const toggleSound = () => { soundEnabled = !soundEnabled; return soundEnabled }
+    const toggleCombat = () => { combatEnabled = !combatEnabled; return combatEnabled }
+    
+    expect(toggleSound()).toBe(false)
+    expect(toggleSound()).toBe(true)
+    expect(toggleCombat()).toBe(true)
+    expect(toggleCombat()).toBe(false)
+  })
+
+  test('scene state tracking works', () => {
+    // Test scene state that would be managed by the UI
+    const sceneStates = {
+      currentScene: 'GameUIScene',
+      previousScene: null,
+      isTransitioning: false
+    }
+    
+    const updateSceneState = (newScene) => {
+      sceneStates.previousScene = sceneStates.currentScene
+      sceneStates.currentScene = newScene
+      sceneStates.isTransitioning = true
+    }
+    
+    updateSceneState('SkillSpaceScene')
+    expect(sceneStates.currentScene).toBe('SkillSpaceScene')
+    expect(sceneStates.previousScene).toBe('GameUIScene')
+    expect(sceneStates.isTransitioning).toBe(true)
+  })
+
+  test('event listener management works', () => {
+    const listeners = new Map()
+    
+    const addListener = (event, callback) => {
+      if (!listeners.has(event)) listeners.set(event, [])
+      listeners.get(event).push(callback)
+    }
+    
+    const removeAllListeners = () => {
+      listeners.clear()
+    }
+    
+    addListener('test-event', () => {})
+    addListener('test-event', () => {})
+    expect(listeners.get('test-event').length).toBe(2)
+    
+    removeAllListeners()
+    expect(listeners.size).toBe(0)
   })
 })
 

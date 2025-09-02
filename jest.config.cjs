@@ -6,12 +6,15 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.app.json' }],
     '^.+\\.vue$': '<rootDir>/tests/jest/vue3-sfc-transformer.cjs',
+    '^.+\\.js$': 'babel-jest',
   },
-  transformIgnorePatterns: ['/node_modules/'],
+  transformIgnorePatterns: ['/node_modules/(?!three)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@$': '<rootDir>/src',
     '^phaser$': '<rootDir>/tests/__mocks__/phaser.ts',
+    '^three$': '<rootDir>/tests/__mocks__/three.ts',
+    '^three/examples/jsm/controls/PointerLockControls$': '<rootDir>/tests/__mocks__/three/examples/jsm/controls/PointerLockControls.ts',
   },
   collectCoverageFrom: [
     'src/**/*.{ts,js,vue}',
