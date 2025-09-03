@@ -611,27 +611,7 @@ export default defineComponent({
     const createSpaceDecorations = (): void => {
       if (!state.scene) return
 
-      // Add floating particles/stars
-      const starGeometry = new THREE.BufferGeometry()
-      const starCount = 200
-      const positions = new Float32Array(starCount * 3)
-      
-      for (let i = 0; i < starCount * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 200
-        positions[i + 1] = Math.random() * 20
-        positions[i + 2] = (Math.random() - 0.5) * 200
-      }
-      
-      starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      const starMaterial = new THREE.PointsMaterial({ 
-        color: 0xffffff,
-        size: 0.5,
-        transparent: true,
-        opacity: 0.8
-      })
-      
-      const stars = new THREE.Points(starGeometry, starMaterial)
-      state.scene.add(stars)
+      // Space decorations can be added here if needed in the future
     }
 
     // Create portfolio displays around the circular wall
