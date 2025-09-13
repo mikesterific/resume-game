@@ -141,14 +141,7 @@ interface MuseumState {
   // Background music state
   backgroundMusic: HTMLAudioElement | null
   soundEnabled: boolean
-  // Grappling hook state
-  isGrappling: boolean
-  hookPosition: THREE.Vector3 | null
-  attachedObject: THREE.Object3D | null
-  ropeLine: THREE.Line | null
-  grappleRange: number
-  lastGrappleTime: number
-  wallObjects: THREE.Mesh[]
+
 }
 
 export default defineComponent({
@@ -207,15 +200,7 @@ export default defineComponent({
       isPointerLocked: false,
       // Background music state  
       backgroundMusic: null,
-      soundEnabled: true, // Default to sound ON for immersive experience
-      // Grappling hook state
-      isGrappling: false,
-      hookPosition: null,
-      attachedObject: null,
-      ropeLine: null,
-      grappleRange: 25, // Increased grapple range for better gameplay
-      lastGrappleTime: 0,
-      wallObjects: []
+      soundEnabled: true // Default to sound ON for immersive experience
     }
 
     // Settings management
@@ -427,167 +412,20 @@ export default defineComponent({
         }
       }
       
-      // If not clicking on portfolio, try grappling (for testing)
-      console.log('🎯 Left-click grappling test!')
-      fireGrappleHook(event)
+
     }
 
-    // Handle right-click for grappling hook
-    const onRightClick = (event: MouseEvent): void => {
-      console.log('🪝 Right-click detected!', { 
-        modalOpen: props.modalOpen, 
-        isPointerLocked: state.isPointerLocked 
-      })
-      
-      event.preventDefault() // Prevent context menu
-      
-      // Don't handle if modal is open
-      if (props.modalOpen) {
-        console.log('🚫 Grappling blocked - modal open')
-        return
-      }
-      
-      // TEMPORARILY REMOVE POINTER LOCK REQUIREMENT FOR TESTING
-      // if (!state.isPointerLocked) {
-      //   console.log('🚫 Grappling blocked - not pointer locked')
-      //   return
-      // }
-      
-      // Check cooldown (300ms between grapples)
-      const currentTime = Date.now()
-      if (currentTime - state.lastGrappleTime < 300) {
-        console.log('🚫 Grappling blocked - cooldown active')
-        return
-      }
-      
-      console.log('✅ Firing grappling hook!')
-      fireGrappleHook(event)
-    }
 
-    // Fire grappling hook towards mouse position
-    const fireGrappleHook = (event: MouseEvent): void => {
-      if (!state.raycaster || !state.camera || !state.mouse || !museumContainer.value || !state.scene) return
-      
-      // Update mouse coordinates for raycasting
-      const rect = museumContainer.value.getBoundingClientRect()
-      const x = (event.clientX - rect.left) / rect.width
-      const y = (event.clientY - rect.top) / rect.height
-      
-      state.mouse.x = (x * 2) - 1
-      state.mouse.y = -(y * 2) + 1
-      
-      // Cast ray from camera
-      state.raycaster.setFromCamera(state.mouse, state.camera)
-      
-      // Check for valid attachment points (portfolio frames and walls)
-      const grappleTargets = [
-        ...state.portfolioFrames.map(frame => frame.mesh),
-        ...state.wallObjects
-      ]
-      const intersects = state.raycaster.intersectObjects(grappleTargets)
-      
-      console.log('🎯 Grappling attempt:', { 
-        targetCount: grappleTargets.length,
-        portfolioFrames: state.portfolioFrames.length,
-        wallObjects: state.wallObjects.length,
-        intersects: intersects.length
-      })
-      
-      if (intersects.length > 0) {
-        const hitPoint = intersects[0].point
-        const hitObject = intersects[0].object
-        // Use yawObject position (actual player position) instead of camera position
-        const playerPosition = state.yawObject ? state.yawObject.position : state.camera.position
-        const distance = playerPosition.distanceTo(hitPoint)
-        
-        console.log('🎯 Hit detected!', { 
-          distance: distance.toFixed(2), 
-          grappleRange: state.grappleRange,
-          withinRange: distance <= state.grappleRange,
-          hitPoint: { x: hitPoint.x.toFixed(2), y: hitPoint.y.toFixed(2), z: hitPoint.z.toFixed(2) }
-        })
-        
-        // Check if within grapple range
-        if (distance <= state.grappleRange) {
-          console.log('🪝 ATTACHING GRAPPLE HOOK!')
-          attachGrappleHook(hitPoint, hitObject)
-        } else {
-          console.log('❌ Target too far! Distance:', distance.toFixed(2), 'Range:', state.grappleRange)
-        }
-      } else {
-        console.log('❌ No targets hit!')
-      }
-      
-      state.lastGrappleTime = Date.now()
-    }
 
-    // Attach grappling hook to target
-    const attachGrappleHook = (position: THREE.Vector3, target: THREE.Object3D): void => {
-      if (!state.scene || !state.camera) return
-      
-      // Detach existing hook if any
-      detachGrappleHook()
-      
-      // Set grappling state
-      state.isGrappling = true
-      state.hookPosition = position.clone()
-      state.attachedObject = target
-      
-      // Create rope line
-      createRopeLine()
-    }
 
-    // Create visual rope line
-    const createRopeLine = (): void => {
-      if (!state.scene || !state.camera || !state.hookPosition) return
-      
-      // Create line geometry
-      const points = [
-        state.camera.position.clone(),
-        state.hookPosition.clone()
-      ]
-      
-      const geometry = new THREE.BufferGeometry().setFromPoints(points)
-      const material = new THREE.LineBasicMaterial({ 
-        color: 0x00ff00, // Green when attached
-        linewidth: 2
-      })
-      
-      state.ropeLine = new THREE.Line(geometry, material)
-      state.scene.add(state.ropeLine)
-    }
 
-    // Update rope line position
-    const updateRopeLine = (): void => {
-      if (!state.ropeLine || !state.camera || !state.hookPosition) return
-      
-      const points = [
-        state.camera.position.clone(),
-        state.hookPosition.clone()
-      ]
-      
-      state.ropeLine.geometry.setFromPoints(points)
-    }
 
-    // Detach grappling hook
-    const detachGrappleHook = (): void => {
-      if (!state.scene) return
-      
-      // Remove rope line from scene
-      if (state.ropeLine) {
-        state.scene.remove(state.ropeLine)
-        state.ropeLine.geometry.dispose()
-        if (state.ropeLine.material instanceof THREE.Material) {
-          state.ropeLine.material.dispose()
-        }
-        state.ropeLine = null
-      }
-      
-      // Reset grappling state
-      state.isGrappling = false
-      state.hookPosition = null
-      state.attachedObject = null
-    }
+
+
+
+
+
+
 
     // Initialize the 3D museum
     const initializeMuseum = async (): Promise<void> => {
@@ -731,9 +569,7 @@ export default defineComponent({
       createCeilingLights()
       createSpaceDecorations()
 
-      // Store wall objects for grappling (including ceiling for Spider-Man style swinging!)
-      state.wallObjects.push(frontWall, backWall, leftWall, rightWall, ceiling)
-      console.log('🏗️ Museum walls added as grappling targets (OPTIMIZED RECTANGULAR):', state.wallObjects.length)
+
     }
 
     // Create ceiling lighting system (OPTIMIZED: rectangular grid layout)
@@ -1052,7 +888,7 @@ export default defineComponent({
       // Mouse controls for interaction
       document.addEventListener('click', onMouseClick)
       document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('contextmenu', onRightClick) // Right-click for grappling hook
+
       
       // ESC to exit
       document.addEventListener('keydown', (event) => {
@@ -1094,11 +930,7 @@ export default defineComponent({
             state.targetSpeedMultiplier = 2.2
           }
           break
-        case 'KeyE':
-          if (state.isGrappling) {
-            detachGrappleHook()
-          }
-          break
+
       }
     }
 
@@ -1178,28 +1010,7 @@ export default defineComponent({
         state.physics.velocityY = 0 // Stop upward movement
       }
 
-      // Grappling hook physics
-      if (state.isGrappling && state.hookPosition && state.yawObject) {
-        const distance = state.yawObject.position.distanceTo(state.hookPosition)
-        
-        // Auto-detach if very close to target (< 2 meters)
-        if (distance < 2) {
-          detachGrappleHook()
-        } else {
-          // Calculate pull direction and force
-          const pullDirection = state.hookPosition.clone().sub(state.yawObject.position).normalize()
-          const pullForce = Math.min(distance * 0.5, 15) // Max pull force of 15
-          
-          // Apply pull force to velocity
-          const pullVector = pullDirection.multiplyScalar(pullForce * delta)
-          state.velocity.add(pullVector)
-        }
-      }
 
-      // Update rope line position
-      if (state.isGrappling) {
-        updateRopeLine()
-      }
     }
 
     // Animation loop
@@ -1284,11 +1095,7 @@ export default defineComponent({
       document.removeEventListener('keyup', onKeyUp)
       document.removeEventListener('click', onMouseClick)
       document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('contextmenu', onRightClick) // Right-click for grappling hook
       window.removeEventListener('resize', handleResize)
-      
-      // Clean up grappling hook
-      detachGrappleHook()
       
       // Stop background music
       stopBackgroundMusic()
