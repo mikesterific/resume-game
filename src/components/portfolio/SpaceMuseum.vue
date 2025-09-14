@@ -117,8 +117,8 @@ interface MuseumState {
     projectData: ProjectData
   }>
   // 3D Models
-  couchModel: THREE.Group | null
-  benchModel: THREE.Group | null
+  couchModels: THREE.Group[]
+  benchModels: THREE.Group[]
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -181,8 +181,8 @@ export default defineComponent({
       mouse: null,
       portfolioFrames: [],
       // 3D Models
-      couchModel: null,
-      benchModel: null,
+      couchModels: [],
+      benchModels: [],
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -473,8 +473,8 @@ export default defineComponent({
         // Build the museum environment
         await createMuseumEnvironment()
         await createPortfolioDisplays()
-        await loadCouchModel() // Load the couch 3D model
-        await loadBenchModel() // Load the bench 3D model
+        await loadCouchModels() // Load the couch 3D models in center
+        await loadBenchModels() // Load the bench 3D models in front of artworks
         setupLighting()
         setupEventListeners()
         
@@ -653,99 +653,142 @@ export default defineComponent({
       // Space decorations can be added here if needed in the future
     }
 
-    // Load and position the couch 3D model
-    const loadCouchModel = async (): Promise<void> => {
+    // Load and position multiple couch 3D models in center facing outward
+    const loadCouchModels = async (): Promise<void> => {
       if (!state.scene) return
 
       const loader = new GLTFLoader()
       
       try {
-        console.log('🪑 Loading couch model...')
+        console.log('🪑 Loading couch models...')
         const gltf = await loader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
         
-        state.couchModel = gltf.scene
+        // Define 4 couch positions in center facing outward
+        const couchPositions = [
+          { x: -6, z: -6, rotation: Math.PI * 3/4, name: 'front-left' },   // Facing front-left area
+          { x: 6, z: -6, rotation: Math.PI / 4, name: 'front-right' },     // Facing front-right area
+          { x: 6, z: 6, rotation: -Math.PI / 4, name: 'back-right' },      // Facing back-right area
+          { x: -6, z: 6, rotation: -Math.PI * 3/4, name: 'back-left' }     // Facing back-left area
+        ]
         
-        // Scale the couch appropriately for the museum space
-        state.couchModel.scale.setScalar(2.0) // Adjust scale as needed
-        
-        // Position the couch in the center-front area of the museum
-        state.couchModel.position.set(0, 0, 10) // Center X, ground Y, front area Z
-        
-        // Rotate the couch to face towards the back wall (portfolio area)
-        state.couchModel.rotation.y = Math.PI
-        
-        // Enable shadows for the couch
-        state.couchModel.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true
-            child.receiveShadow = true
-            
-            // Ensure materials are properly configured for lighting
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach(mat => {
-                  mat.needsUpdate = true
-                })
-              } else {
-                child.material.needsUpdate = true
+        couchPositions.forEach((position, index) => {
+          // Clone the model for each position
+          const couchModel = gltf.scene.clone()
+          
+          // Scale the couch appropriately for the museum space
+          couchModel.scale.setScalar(2.0)
+          
+          // Position the couch according to the layout
+          couchModel.position.set(position.x, 0, position.z)
+          
+          // Rotate the couch to face outward toward artwork
+          couchModel.rotation.y = position.rotation
+          
+          // Enable shadows for the couch
+          couchModel.traverse((child: any) => {
+            if (child instanceof THREE.Mesh) {
+              child.castShadow = true
+              child.receiveShadow = true
+              
+              // Ensure materials are properly configured for lighting
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach((mat: any) => {
+                    mat.needsUpdate = true
+                  })
+                } else {
+                  child.material.needsUpdate = true
+                }
               }
             }
-          }
+          })
+          
+          state.scene!.add(couchModel)
+          state.couchModels.push(couchModel)
+          
+          console.log(`✅ Couch ${index + 1} (${position.name}) positioned at (${position.x}, ${position.z})`)
         })
         
-        state.scene.add(state.couchModel)
-        console.log('✅ Couch model loaded and positioned successfully')
+        console.log(`✅ All ${couchPositions.length} couch models loaded successfully`)
         
       } catch (error) {
-        console.error('❌ Failed to load couch model:', error)
+        console.error('❌ Failed to load couch models:', error)
       }
     }
 
-    // Load and position the bench 3D model
-    const loadBenchModel = async (): Promise<void> => {
+    // Load and position multiple bench 3D models in front of each artwork
+    const loadBenchModels = async (): Promise<void> => {
       if (!state.scene) return
 
       const loader = new GLTFLoader()
       
       try {
-        console.log('🪑 Loading bench model...')
+        console.log('🪑 Loading bench models...')
         const gltf = await loader.loadAsync('/src/assets/3d/bench_pbr.glb')
         
-        state.benchModel = gltf.scene
+        // Define bench positions in front of each artwork (matching portfolio frame positions)
+        const benchPositions = [
+          // Front wall benches (facing front wall)
+          { x: -15, z: 14, rotation: 0, wall: 'front-left' },
+          { x: 0, z: 14, rotation: 0, wall: 'front-center' },
+          { x: 15, z: 14, rotation: 0, wall: 'front-right' },
+          
+          // Back wall benches (facing back wall)
+          { x: -15, z: -14, rotation: Math.PI, wall: 'back-left' },
+          { x: 0, z: -14, rotation: Math.PI, wall: 'back-center' },
+          { x: 15, z: -14, rotation: Math.PI, wall: 'back-right' },
+          
+          // Left wall benches (facing left wall)
+          { x: -24, z: -8, rotation: Math.PI / 2, wall: 'left-front' },
+          { x: -24, z: 8, rotation: Math.PI / 2, wall: 'left-back' },
+          
+          // Right wall benches (facing right wall)
+          { x: 24, z: -8, rotation: -Math.PI / 2, wall: 'right-front' },
+          { x: 24, z: 8, rotation: -Math.PI / 2, wall: 'right-back' }
+        ]
         
-        // Scale the bench appropriately for the museum space
-        state.benchModel.scale.setScalar(2.0) // Adjust scale as needed
-        
-        // Position the bench in a different area than the couch
-        state.benchModel.position.set(-12, 0, 8) // Left side of museum
-        
-        // Rotate the bench to face towards the center/portfolio area
-        state.benchModel.rotation.y = Math.PI / 4 // 45 degree angle
-        
-        // Enable shadows for the bench
-        state.benchModel.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true
-            child.receiveShadow = true
-            
-            // Ensure materials are properly configured for lighting
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach(mat => {
-                  mat.needsUpdate = true
-                })
-              } else {
-                child.material.needsUpdate = true
+        benchPositions.forEach((position, index) => {
+          // Clone the model for each position
+          const benchModel = gltf.scene.clone()
+          
+          // Scale the bench appropriately for the museum space
+          benchModel.scale.setScalar(1.8) // Slightly smaller than couches
+          
+          // Position the bench in front of artwork
+          benchModel.position.set(position.x, 0, position.z)
+          
+          // Rotate the bench to face the artwork
+          benchModel.rotation.y = position.rotation
+          
+          // Enable shadows for the bench
+          benchModel.traverse((child: any) => {
+            if (child instanceof THREE.Mesh) {
+              child.castShadow = true
+              child.receiveShadow = true
+              
+              // Ensure materials are properly configured for lighting
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach((mat: any) => {
+                    mat.needsUpdate = true
+                  })
+                } else {
+                  child.material.needsUpdate = true
+                }
               }
             }
-          }
+          })
+          
+          state.scene!.add(benchModel)
+          state.benchModels.push(benchModel)
+          
+          console.log(`✅ Bench ${index + 1} (${position.wall}) positioned at (${position.x}, ${position.z})`)
         })
         
-        state.scene.add(state.benchModel)
-        console.log('✅ Bench model loaded and positioned successfully')
+        console.log(`✅ All ${benchPositions.length} bench models loaded successfully`)
         
       } catch (error) {
-        console.error('❌ Failed to load bench model:', error)
+        console.error('❌ Failed to load bench models:', error)
       }
     }
 
@@ -1119,25 +1162,8 @@ export default defineComponent({
       return wallCollision
     }
 
-    // Legacy couch collision function (now replaced by raycaster surface detection)
-    // Keeping for potential future use with different collision needs
-    const checkCouchCollision = (playerPosition: THREE.Vector3): boolean => {
-      if (!state.couchModel) return false
-      
-      const couchPosition = state.couchModel.position
-      const couchBounds = {
-        // Approximate couch dimensions (adjust based on your model size)
-        width: 4.0,  // X-axis
-        depth: 2.0,  // Z-axis
-        height: 2.0  // Y-axis (for sitting/jumping on couch)
-      }
-      
-      // Simple bounding box collision detection
-      const distance = playerPosition.distanceTo(couchPosition)
-      const collisionRadius = Math.max(couchBounds.width, couchBounds.depth) / 2 + 1.0 // Player buffer
-      
-      return distance < collisionRadius
-    }
+    // Legacy collision function removed - now using raycaster for all furniture collision detection
+    // Multiple furniture pieces are handled in the physics raycaster system
 
     // Check ceiling collision for vertical movement (jumping/gravity)
     const checkCeilingCollision = (currentY: number, proposedYMovement: number): boolean => {
@@ -1167,25 +1193,25 @@ export default defineComponent({
         collidableObjects.push(state.floorMesh)
       }
       
-      // Add couch model meshes
-      if (state.couchModel) {
-        state.couchModel.traverse((child) => {
+      // Add all couch model meshes
+      state.couchModels.forEach(couchModel => {
+        couchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             child.name = child.name || 'couch-part' // Name for identification
             collidableObjects.push(child)
           }
         })
-      }
+      })
       
-      // Add bench model meshes
-      if (state.benchModel) {
-        state.benchModel.traverse((child) => {
+      // Add all bench model meshes
+      state.benchModels.forEach(benchModel => {
+        benchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             child.name = child.name || 'bench-part' // Name for identification
             collidableObjects.push(child)
           }
         })
-      }
+      })
       
       // Perform intersection test with increased ray distance
       const intersections = raycaster.intersectObjects(collidableObjects, true)
@@ -1344,13 +1370,13 @@ export default defineComponent({
       stopBackgroundMusic()
       
       // Dispose of 3D models
-      if (state.couchModel) {
-        state.couchModel.traverse((child) => {
+      state.couchModels.forEach(couchModel => {
+        couchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             if (child.geometry) child.geometry.dispose()
             if (child.material) {
               if (Array.isArray(child.material)) {
-                child.material.forEach(material => material.dispose())
+                child.material.forEach((material: any) => material.dispose())
               } else {
                 child.material.dispose()
               }
@@ -1358,19 +1384,19 @@ export default defineComponent({
           }
         })
         if (state.scene) {
-          state.scene.remove(state.couchModel)
+          state.scene.remove(couchModel)
         }
-        state.couchModel = null
-      }
+      })
+      state.couchModels = []
       
-      // Dispose of bench model
-      if (state.benchModel) {
-        state.benchModel.traverse((child) => {
+      // Dispose of bench models
+      state.benchModels.forEach(benchModel => {
+        benchModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             if (child.geometry) child.geometry.dispose()
             if (child.material) {
               if (Array.isArray(child.material)) {
-                child.material.forEach(material => material.dispose())
+                child.material.forEach((material: any) => material.dispose())
               } else {
                 child.material.dispose()
               }
@@ -1378,10 +1404,10 @@ export default defineComponent({
           }
         })
         if (state.scene) {
-          state.scene.remove(state.benchModel)
+          state.scene.remove(benchModel)
         }
-        state.benchModel = null
-      }
+      })
+      state.benchModels = []
       
       // Dispose of floor mesh
       if (state.floorMesh) {
