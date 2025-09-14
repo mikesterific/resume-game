@@ -123,6 +123,7 @@ interface MuseumState {
   mouseManModel: THREE.Group | null
   cleoModel: THREE.Group | null
   socratesModel: THREE.Group | null
+  starbucksModel: THREE.Group | null
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -191,6 +192,7 @@ export default defineComponent({
       mouseManModel: null,
       cleoModel: null,
       socratesModel: null,
+      starbucksModel: null,
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -492,6 +494,7 @@ export default defineComponent({
         await loadMouseManModel() // Load the man-holding-mouse model in corner
         await loadCleoModel() // Load the cleo model in another corner
         await loadSocratesModel() // Load the socrates model in back-left corner
+        await loadStarbucksModel() // Load the starbucks model in back-right corner
         setupLighting()
         setupEventListeners()
         
@@ -1223,6 +1226,102 @@ export default defineComponent({
       console.log(`✨ Added ${socratesLights.length} optimized lights for Socrates model (removed back/top lights for 60% reduction)`)
     }
 
+    // Load and position Starbucks 3D model in back-right corner
+    const loadStarbucksModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('☕ Loading Starbucks model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/starbucks.glb')
+        
+        const starbucksModel = gltf.scene.clone()
+        
+        // Scale to match other corner models
+        starbucksModel.scale.setScalar(4.4)
+        
+        // Position in back-right corner, facing center
+        starbucksModel.position.set(22, 0, -15) // Back-right corner
+        
+        // Rotate to face the center area (45 degrees toward center, rotated 90° left from original)
+        starbucksModel.rotation.y = -Math.PI / 4 // -45 degrees toward center
+        
+        // Enhance materials for better light reflection
+        starbucksModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Apply the same material enhancement as other models
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => {
+                  enhanceMaterialForLighting(mat)
+                })
+              } else {
+                enhanceMaterialForLighting(child.material)
+              }
+            }
+          }
+        })
+        
+        state.scene!.add(starbucksModel)
+        state.starbucksModel = starbucksModel
+        
+        // Set up invisible lighting specifically for Starbucks
+        setupInvisibleStarbucksLighting()
+        
+        console.log('✅ Starbucks model positioned in back-right corner as developer culture tribute')
+        
+      } catch (error) {
+        console.error('❌ Failed to load Starbucks model:', error)
+      }
+    }
+
+    // Setup invisible lighting for the Starbucks model
+    const setupInvisibleStarbucksLighting = (): void => {
+      if (!state.scene) return
+
+      // Performance-optimized lighting (2 lights only, front-facing for user view angle)
+      const starbucksLights = [
+        // Main key light from front-left (toward center)
+        { 
+          position: { x: 18, y: 6, z: -12 }, 
+          color: 0xffffff, 
+          intensity: 1.6, 
+          distance: 15 
+        },
+        // Caffeine accent light (energetic glow from front)
+        { 
+          position: { x: 19, y: 4, z: -15 }, 
+          color: 0xffddaa, 
+          intensity: 0.8, 
+          distance: 8 
+        }
+      ]
+
+      starbucksLights.forEach((lightConfig, index) => {
+        const light = new THREE.PointLight(
+          lightConfig.color, 
+          lightConfig.intensity, 
+          lightConfig.distance
+        )
+        light.position.set(
+          lightConfig.position.x, 
+          lightConfig.position.y, 
+          lightConfig.position.z
+        )
+        
+        // Invisible lights - no geometry, just illumination
+        state.scene!.add(light)
+        
+        console.log(`☕💡 Starbucks light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
+      })
+
+      console.log(`✨ Added ${starbucksLights.length} optimized lights for Starbucks model (performance-first lighting)`)
+    }
+
     // Load and position thinker 3D model as centerpiece
     const loadThinkerModel = async (): Promise<void> => {
       if (!state.scene) return
@@ -1799,6 +1898,16 @@ export default defineComponent({
         })
       }
       
+      // Add starbucks model meshes for collision detection
+      if (state.starbucksModel) {
+        state.starbucksModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.name = child.name || 'starbucks-part' // Name for identification
+            collidableObjects.push(child)
+          }
+        })
+      }
+      
       // Perform intersection test with increased ray distance
       const intersections = raycaster.intersectObjects(collidableObjects, true)
       
@@ -2077,6 +2186,26 @@ export default defineComponent({
           state.scene.remove(state.socratesModel)
         }
         state.socratesModel = null
+      }
+      
+      // Dispose of Starbucks model
+      if (state.starbucksModel) {
+        state.starbucksModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material: any) => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.starbucksModel)
+        }
+        state.starbucksModel = null
       }
       
       // Dispose of floor mesh
