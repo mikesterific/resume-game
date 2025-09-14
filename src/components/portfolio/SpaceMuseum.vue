@@ -798,6 +798,121 @@ export default defineComponent({
       }
     }
 
+    // Enhance material properties for better light reflection and response
+    const enhanceMaterialForLighting = (material: any): void => {
+      // Convert to MeshStandardMaterial if it's basic material for better lighting
+      if (material.type === 'MeshBasicMaterial') {
+        // Can't convert directly, but we can enhance existing properties
+        console.log('⚠️ Material is MeshBasicMaterial - lighting may be limited')
+      }
+      
+      // Enhanced lighting properties for better reflection
+      if (material.type === 'MeshStandardMaterial' || material.type === 'MeshPhysicalMaterial') {
+        // Make surface more reflective to light
+        material.metalness = Math.min(material.metalness + 0.2, 0.8) // Increase metallic properties
+        material.roughness = Math.max(material.roughness - 0.3, 0.1) // Smoother surface for better reflection
+        material.envMapIntensity = 1.5 // Enhanced environment reflection
+      } else if (material.type === 'MeshPhongMaterial' || material.type === 'MeshLambertMaterial') {
+        // For Phong materials, increase shininess and reflectivity
+        if (material.shininess !== undefined) {
+          material.shininess = Math.min(material.shininess + 30, 100) // More reflective
+        }
+        if (material.reflectivity !== undefined) {
+          material.reflectivity = Math.min(material.reflectivity + 0.3, 1.0) // Higher reflectivity
+        }
+      }
+      
+      // Universal enhancements
+      material.transparent = false // Ensure solid reflection
+      material.needsUpdate = true
+      
+      console.log(`🔧 Enhanced material: ${material.type} - metalness: ${material.metalness}, roughness: ${material.roughness}`)
+    }
+
+    // Setup invisible ambient lighting around the Thinker for better illumination
+    const setupInvisibleThinkerLighting = (): void => {
+      if (!state.scene) return
+
+      // Invisible fill lights positioned around the statue (no visible geometry)
+      const invisibleLights = [
+        // Front-left fill light
+        { 
+          position: { x: -4, y: 6, z: 4 }, 
+          color: 0xffffff, 
+          intensity: 0.8, 
+          type: 'point',
+          distance: 12 
+        },
+        // Front-right fill light  
+        { 
+          position: { x: 4, y: 6, z: 4 }, 
+          color: 0xffffff, 
+          intensity: 0.8, 
+          type: 'point',
+          distance: 12 
+        },
+        // Back-left rim light
+        { 
+          position: { x: -3, y: 7, z: -3 }, 
+          color: 0xffffcc, 
+          intensity: 0.6, 
+          type: 'point',
+          distance: 10 
+        },
+        // Back-right rim light
+        { 
+          position: { x: 3, y: 7, z: -3 }, 
+          color: 0xffffcc, 
+          intensity: 0.6, 
+          type: 'point',
+          distance: 10 
+        },
+        // Top-down soft illumination
+        { 
+          position: { x: 0, y: 8, z: 0 }, 
+          color: 0xffffff, 
+          intensity: 1.0, 
+          type: 'point',
+          distance: 15 
+        },
+        // Side accent lights
+        { 
+          position: { x: -6, y: 4, z: 0 }, 
+          color: 0xccddff, 
+          intensity: 0.5, 
+          type: 'point',
+          distance: 8 
+        },
+        { 
+          position: { x: 6, y: 4, z: 0 }, 
+          color: 0xccddff, 
+          intensity: 0.5, 
+          type: 'point',
+          distance: 8 
+        }
+      ]
+
+      invisibleLights.forEach((lightConfig, index) => {
+        const light = new THREE.PointLight(
+          lightConfig.color, 
+          lightConfig.intensity, 
+          lightConfig.distance
+        )
+        light.position.set(
+          lightConfig.position.x, 
+          lightConfig.position.y, 
+          lightConfig.position.z
+        )
+        
+        // These lights are invisible - no geometry, just illumination
+        state.scene!.add(light)
+        
+        console.log(`💡 Invisible light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
+      })
+
+      console.log(`✨ Added ${invisibleLights.length} invisible lights for enhanced Thinker illumination`)
+    }
+
     // Load and position thinker 3D model as centerpiece
     const loadThinkerModel = async (): Promise<void> => {
       if (!state.scene) return
@@ -819,20 +934,20 @@ export default defineComponent({
         // Face museum entrance for immediate visual impact
         thinkerModel.rotation.y = 0
         
-        // Enable shadows and PBR materials
+        // Enable shadows and enhance PBR materials for better light reflection
         thinkerModel.traverse((child: any) => {
           if (child instanceof THREE.Mesh) {
             child.castShadow = true
             child.receiveShadow = true
             
-            // Ensure materials are properly configured for lighting
+            // Enhance materials for better light reflection and response
             if (child.material) {
               if (Array.isArray(child.material)) {
                 child.material.forEach((mat: any) => {
-                  mat.needsUpdate = true
+                  enhanceMaterialForLighting(mat)
                 })
               } else {
-                child.material.needsUpdate = true
+                enhanceMaterialForLighting(child.material)
               }
             }
           }
@@ -1073,6 +1188,91 @@ export default defineComponent({
       accentLight2.target.position.set(-radius * 0.8, 6, 0)
       state.scene.add(accentLight2)
       state.scene.add(accentLight2.target)
+
+      // Enhanced lighting for the Thinker centerpiece
+      setupThinkerLighting()
+    }
+
+    // Dedicated lighting setup for the Thinker statue
+    const setupThinkerLighting = (): void => {
+      if (!state.scene) return
+
+      // Main dramatic spotlight from above-front (key light)
+      const mainSpotlight = new THREE.SpotLight(0xffffff, 1.4)
+      mainSpotlight.position.set(0, 10, 8) // Above and in front
+      mainSpotlight.angle = Math.PI / 4 // 45-degree cone
+      mainSpotlight.penumbra = 0.3 // Soft edges for dramatic effect
+      mainSpotlight.distance = 25
+      mainSpotlight.castShadow = true
+      mainSpotlight.shadow.mapSize.width = 1024
+      mainSpotlight.shadow.mapSize.height = 1024
+      // Target the thinker position
+      mainSpotlight.target.position.set(0, 2.5, 0) // Slightly above base
+      state.scene.add(mainSpotlight)
+      state.scene.add(mainSpotlight.target)
+
+      // Rim light from behind-left (creates dramatic silhouette)
+      const rimLight = new THREE.SpotLight(0xaaccff, 0.9)
+      rimLight.position.set(-6, 9, -6)
+      rimLight.angle = Math.PI / 3
+      rimLight.penumbra = 0.4
+      rimLight.distance = 20
+      rimLight.target.position.set(0, 2.5, 0)
+      state.scene.add(rimLight)
+      state.scene.add(rimLight.target)
+
+      // Fill light from right side (softens harsh shadows)
+      const fillLight = new THREE.SpotLight(0xffffaa, 0.7)
+      fillLight.position.set(8, 7, 2)
+      fillLight.angle = Math.PI / 2.5
+      fillLight.penumbra = 0.5
+      fillLight.distance = 18
+      fillLight.target.position.set(0, 2.5, 0)
+      state.scene.add(fillLight)
+      state.scene.add(fillLight.target)
+
+      // Warm ambient point light near the statue base
+      const baseLight = new THREE.PointLight(0xffffcc, 0.6, 12)
+      baseLight.position.set(0, 1, 0)
+      state.scene.add(baseLight)
+
+      // Cool accent point light for depth
+      const accentPoint = new THREE.PointLight(0xccddff, 0.4, 10)
+      accentPoint.position.set(3, 4, -3)
+      state.scene.add(accentPoint)
+
+      // Laptop screen light emanating from the actual screen surface - MAXIMUM INTENSITY
+      const laptopScreenLight = new THREE.PointLight(0x88bbff, 2.5, 12)
+      // Position the light at the laptop screen surface (angled toward the face)
+      laptopScreenLight.position.set(0, 2.8, 1.0) // Lower and closer to avoid arm
+      state.scene.add(laptopScreenLight)
+      
+      // Additional focused spotlight from laptop screen toward face - ULTRA BRIGHT
+      const laptopSpotlight = new THREE.SpotLight(0xaaccff, 2.0)
+      laptopSpotlight.position.set(0, 2.8, 1.0) // Lower starting position
+      laptopSpotlight.angle = Math.PI / 5 // Slightly narrower beam
+      laptopSpotlight.penumbra = 0.3 // Sharp enough to show details
+      laptopSpotlight.distance = 15
+      // Target higher - aim for the head/face area specifically
+      laptopSpotlight.target.position.set(0, 4.2, -0.2) // Higher target, angled up
+      state.scene.add(laptopSpotlight)
+      state.scene.add(laptopSpotlight.target)
+
+      // Additional face-specific light angled upward for maximum detail visibility - BOOSTED
+      const faceDetailLight = new THREE.SpotLight(0xbbddff, 1.5)
+      faceDetailLight.position.set(0, 2.9, 1.2) // Lower position, closer to screen
+      faceDetailLight.angle = Math.PI / 7 // Very focused beam on face only
+      faceDetailLight.penumbra = 0.2 // Sharp detail lighting
+      faceDetailLight.distance = 8
+      faceDetailLight.target.position.set(0, 4.5, -0.3) // Target face specifically, angled up
+      state.scene.add(faceDetailLight)
+      state.scene.add(faceDetailLight.target)
+
+              // Add invisible ambient lighting around the Thinker for better general illumination
+        setupInvisibleThinkerLighting()
+
+        console.log('🎭 Enhanced dramatic lighting applied to Thinker centerpiece')
+        console.log('💻 Laptop screen light illuminating the Thinker\'s face')
     }
 
     // Setup event listeners
