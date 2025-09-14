@@ -686,12 +686,19 @@ export default defineComponent({
         console.log('🪑 Loading couch models...')
         const gltf = await loader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
         
-        // Define 4 couch positions in center facing outward
+        // Define expanded couch positions - original 4 + 5 new ones for better space filling
         const couchPositions = [
+          // Original 4 couches in center square formation
           { x: -6, z: -6, rotation: Math.PI * 3/4, name: 'front-left' },   // Facing front-left area
           { x: 6, z: -6, rotation: Math.PI / 4, name: 'front-right' },     // Facing front-right area
           { x: 6, z: 6, rotation: -Math.PI / 4, name: 'back-right' },      // Facing back-right area
-          { x: -6, z: 6, rotation: -Math.PI * 3/4, name: 'back-left' }     // Facing back-left area
+          { x: -6, z: 6, rotation: -Math.PI * 3/4, name: 'back-left' },    // Facing back-left area
+          
+          // 4 new couches to fill the space better (removed center-forward behind thinker)
+          { x: -15, z: 0, rotation: Math.PI / 2, name: 'mid-left' },       // Left side facing right toward center
+          { x: 15, z: 0, rotation: -Math.PI / 2, name: 'mid-right' },      // Right side facing left toward center
+          { x: 0, z: 10, rotation: Math.PI, name: 'front-center' },        // Front area facing front wall
+          { x: 0, z: -10, rotation: 0, name: 'back-center' }               // Back area facing back wall
         ]
         
         couchPositions.forEach((position, index) => {
