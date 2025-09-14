@@ -120,6 +120,8 @@ interface MuseumState {
   couchModels: THREE.Group[]
   benchModels: THREE.Group[]
   thinkerModel: THREE.Group | null
+  mouseManModel: THREE.Group | null
+  cleoModel: THREE.Group | null
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -185,6 +187,8 @@ export default defineComponent({
       couchModels: [],
       benchModels: [],
       thinkerModel: null,
+      mouseManModel: null,
+      cleoModel: null,
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -478,6 +482,8 @@ export default defineComponent({
         await loadCouchModels() // Load the couch 3D models in center
         await loadBenchModels() // Load the bench 3D models in front of artworks
         await loadThinkerModel() // Load the thinker centerpiece model
+        await loadMouseManModel() // Load the man-holding-mouse model in corner
+        await loadCleoModel() // Load the cleo model in another corner
         setupLighting()
         setupEventListeners()
         
@@ -911,6 +917,262 @@ export default defineComponent({
       })
 
       console.log(`✨ Added ${invisibleLights.length} invisible lights for enhanced Thinker illumination`)
+    }
+
+    // Load and position man-holding-mouse 3D model in corner
+    const loadMouseManModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('🐭 Loading man-holding-mouse model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/man-holding-mouse.glb')
+        
+        const mouseManModel = gltf.scene.clone()
+        
+        // Scale appropriately for the museum space (doubled size)
+        mouseManModel.scale.setScalar(4.4)
+        
+        // Position in front-left corner, facing the center (toward the thinker)
+        mouseManModel.position.set(-22, 0, 15) // Front-left corner
+        
+        // Rotate to face the center where the thinker is located (another 45 degrees left)
+        mouseManModel.rotation.y = 3 * Math.PI / 4 // 135 degrees total (another 45 degrees more left)
+        
+        // Enhance materials for better light reflection
+        mouseManModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Apply the same material enhancement as the thinker
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => {
+                  enhanceMaterialForLighting(mat)
+                })
+              } else {
+                enhanceMaterialForLighting(child.material)
+              }
+            }
+          }
+        })
+        
+        state.scene!.add(mouseManModel)
+        state.mouseManModel = mouseManModel
+        
+        // Set up invisible lighting specifically for the mouse man
+        setupInvisibleMouseManLighting()
+        
+        console.log('✅ Man-holding-mouse model positioned in front-left corner facing center')
+        
+      } catch (error) {
+        console.error('❌ Failed to load man-holding-mouse model:', error)
+      }
+    }
+
+    // Setup invisible lighting for the man-holding-mouse model
+    const setupInvisibleMouseManLighting = (): void => {
+      if (!state.scene) return
+
+      // Invisible lights positioned around the mouse man statue
+      const mouseManLights = [
+        // Main key light from front-right (toward center)
+        { 
+          position: { x: -18, y: 6, z: 18 }, 
+          color: 0xffffff, 
+          intensity: 1.2, 
+          distance: 15 
+        },
+        // Fill light from behind-left
+        { 
+          position: { x: -26, y: 5, z: 12 }, 
+          color: 0xffffcc, 
+          intensity: 0.8, 
+          distance: 12 
+        },
+        // Rim light from above-back
+        { 
+          position: { x: -24, y: 8, z: 13 }, 
+          color: 0xccddff, 
+          intensity: 0.6, 
+          distance: 10 
+        },
+        // Top-down soft illumination
+        { 
+          position: { x: -22, y: 9, z: 15 }, 
+          color: 0xffffff, 
+          intensity: 0.9, 
+          distance: 12 
+        },
+        // Side accent light from right
+        { 
+          position: { x: -19, y: 4, z: 15 }, 
+          color: 0xaaccff, 
+          intensity: 0.5, 
+          distance: 8 
+        }
+      ]
+
+      mouseManLights.forEach((lightConfig, index) => {
+        const light = new THREE.PointLight(
+          lightConfig.color, 
+          lightConfig.intensity, 
+          lightConfig.distance
+        )
+        light.position.set(
+          lightConfig.position.x, 
+          lightConfig.position.y, 
+          lightConfig.position.z
+        )
+        
+        // Invisible lights - no geometry, just illumination
+        state.scene!.add(light)
+        
+        console.log(`🐭💡 Mouse man light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
+      })
+
+      console.log(`✨ Added ${mouseManLights.length} invisible lights for mouse man model`)
+    }
+
+    // Load and position Cleo 3D model in corner
+    const loadCleoModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('👸 Loading Cleo model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/cleo.glb')
+        
+        const cleoModel = gltf.scene.clone()
+        
+        // Scale to same size as mouse man (doubled size)
+        cleoModel.scale.setScalar(4.4)
+        
+        // Position in front-right corner, facing inward
+        cleoModel.position.set(22, 0, 15) // Front-right corner
+        
+        // Rotate to face the center area (90 degrees right from previous position)
+        cleoModel.rotation.y = -3 * Math.PI / 4 // -135 degrees total (90 degrees more to the right)
+        
+        // Enhance materials for better light reflection
+        cleoModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Apply enhanced material with geometry-smoothing properties
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => {
+                  enhanceMaterialForLighting(mat)
+                  // Additional smoothing for Cleo to minimize geometric imperfections
+                  if (mat.roughness !== undefined) {
+                    mat.roughness = Math.max(mat.roughness + 0.1, 0.3) // Slightly more diffuse
+                  }
+                })
+              } else {
+                enhanceMaterialForLighting(child.material)
+                // Additional smoothing for Cleo to minimize geometric imperfections
+                if (child.material.roughness !== undefined) {
+                  child.material.roughness = Math.max(child.material.roughness + 0.1, 0.3)
+                }
+              }
+            }
+          }
+        })
+        
+        state.scene!.add(cleoModel)
+        state.cleoModel = cleoModel
+        
+        // Set up invisible lighting specifically for Cleo
+        setupInvisibleCleoLighting()
+        
+        console.log('✅ Cleo model positioned in front-right corner facing center')
+        
+      } catch (error) {
+        console.error('❌ Failed to load Cleo model:', error)
+      }
+    }
+
+    // Setup invisible lighting for the Cleo model
+    const setupInvisibleCleoLighting = (): void => {
+      if (!state.scene) return
+
+      // Invisible lights positioned around the Cleo statue
+      const cleoLights = [
+        // Main key light from front-left (toward center)
+        { 
+          position: { x: 18, y: 6, z: 18 }, 
+          color: 0xffffff, 
+          intensity: 1.2, 
+          distance: 15 
+        },
+        // Fill light from behind-right
+        { 
+          position: { x: 26, y: 5, z: 12 }, 
+          color: 0xffffcc, 
+          intensity: 0.8, 
+          distance: 12 
+        },
+        // Rim light from above-back
+        { 
+          position: { x: 24, y: 8, z: 13 }, 
+          color: 0xffccdd, 
+          intensity: 0.7, 
+          distance: 10 
+        },
+        // Top-down soft illumination
+        { 
+          position: { x: 22, y: 9, z: 15 }, 
+          color: 0xffffff, 
+          intensity: 0.9, 
+          distance: 12 
+        },
+        // Side accent light from left
+        { 
+          position: { x: 19, y: 4, z: 15 }, 
+          color: 0xffaacc, 
+          intensity: 0.5, 
+          distance: 8 
+        },
+        // Corrective lighting for left hand area (to minimize bulge appearance)
+        { 
+          position: { x: 21, y: 3.5, z: 16 }, 
+          color: 0xffffff, 
+          intensity: 0.4, 
+          distance: 3 
+        },
+        // Shadow-creating light from opposite side to define hand better
+        { 
+          position: { x: 23, y: 3, z: 14 }, 
+          color: 0xffffee, 
+          intensity: 0.3, 
+          distance: 4 
+        }
+      ]
+
+      cleoLights.forEach((lightConfig, index) => {
+        const light = new THREE.PointLight(
+          lightConfig.color, 
+          lightConfig.intensity, 
+          lightConfig.distance
+        )
+        light.position.set(
+          lightConfig.position.x, 
+          lightConfig.position.y, 
+          lightConfig.position.z
+        )
+        
+        // Invisible lights - no geometry, just illumination
+        state.scene!.add(light)
+        
+        console.log(`👸💡 Cleo light ${index + 1} positioned at (${lightConfig.position.x}, ${lightConfig.position.y}, ${lightConfig.position.z})`)
+      })
+
+      console.log(`✨ Added ${cleoLights.length} invisible lights for Cleo model`)
     }
 
     // Load and position thinker 3D model as centerpiece
@@ -1669,6 +1931,46 @@ export default defineComponent({
           state.scene.remove(state.thinkerModel)
         }
         state.thinkerModel = null
+      }
+      
+      // Dispose of mouse man model
+      if (state.mouseManModel) {
+        state.mouseManModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material: any) => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.mouseManModel)
+        }
+        state.mouseManModel = null
+      }
+      
+      // Dispose of Cleo model
+      if (state.cleoModel) {
+        state.cleoModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material: any) => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.cleoModel)
+        }
+        state.cleoModel = null
       }
       
       // Dispose of floor mesh
