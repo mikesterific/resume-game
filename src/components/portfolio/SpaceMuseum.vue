@@ -119,6 +119,7 @@ interface MuseumState {
   // 3D Models
   couchModels: THREE.Group[]
   benchModels: THREE.Group[]
+  thinkerModel: THREE.Group | null
   floorMesh: THREE.Mesh | null
   moveForward: boolean
   moveBackward: boolean
@@ -183,6 +184,7 @@ export default defineComponent({
       // 3D Models
       couchModels: [],
       benchModels: [],
+      thinkerModel: null,
       floorMesh: null,
       moveForward: false,
       moveBackward: false,
@@ -343,7 +345,7 @@ export default defineComponent({
       
       // Create yaw object (horizontal rotation)
       state.yawObject = new THREE.Object3D()
-      state.yawObject.position.set(0, 1.8, 0) // Center of circular museum at human height
+      state.yawObject.position.set(0, 1.8, 8) // In front of thinker centerpiece for proper frontal view
       
       // Create pitch object (vertical rotation) 
       state.pitchObject = new THREE.Object3D()
@@ -475,6 +477,7 @@ export default defineComponent({
         await createPortfolioDisplays()
         await loadCouchModels() // Load the couch 3D models in center
         await loadBenchModels() // Load the bench 3D models in front of artworks
+        await loadThinkerModel() // Load the thinker centerpiece model
         setupLighting()
         setupEventListeners()
         
@@ -792,6 +795,56 @@ export default defineComponent({
         
       } catch (error) {
         console.error('❌ Failed to load bench models:', error)
+      }
+    }
+
+    // Load and position thinker 3D model as centerpiece
+    const loadThinkerModel = async (): Promise<void> => {
+      if (!state.scene) return
+
+      const loader = new GLTFLoader()
+      
+      try {
+        console.log('🎭 Loading thinker model...')
+        const gltf = await loader.loadAsync('/src/assets/3d/thinker.glb')
+        
+        const thinkerModel = gltf.scene.clone()
+        
+        // Scale for centerpiece prominence (slightly larger than couches)
+        thinkerModel.scale.setScalar(2.5)
+        
+        // Center position between couches for focal point
+        thinkerModel.position.set(0, 0, 0)
+        
+        // Face museum entrance for immediate visual impact
+        thinkerModel.rotation.y = 0
+        
+        // Enable shadows and PBR materials
+        thinkerModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true
+            child.receiveShadow = true
+            
+            // Ensure materials are properly configured for lighting
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((mat: any) => {
+                  mat.needsUpdate = true
+                })
+              } else {
+                child.material.needsUpdate = true
+              }
+            }
+          }
+        })
+        
+        state.scene!.add(thinkerModel)
+        state.thinkerModel = thinkerModel
+        
+        console.log('✅ Thinker centerpiece positioned at museum center (0, 0, 0)')
+        
+      } catch (error) {
+        console.error('❌ Failed to load thinker model:', error)
       }
     }
 
@@ -1216,6 +1269,16 @@ export default defineComponent({
         })
       })
       
+      // Add thinker model meshes for collision detection
+      if (state.thinkerModel) {
+        state.thinkerModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            child.name = child.name || 'thinker-part' // Name for identification
+            collidableObjects.push(child)
+          }
+        })
+      }
+      
       // Perform intersection test with increased ray distance
       const intersections = raycaster.intersectObjects(collidableObjects, true)
       
@@ -1387,6 +1450,26 @@ export default defineComponent({
         }
       })
       state.benchModels = []
+      
+      // Dispose of thinker model
+      if (state.thinkerModel) {
+        state.thinkerModel.traverse((child: any) => {
+          if (child instanceof THREE.Mesh) {
+            if (child.geometry) child.geometry.dispose()
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach((material: any) => material.dispose())
+              } else {
+                child.material.dispose()
+              }
+            }
+          }
+        })
+        if (state.scene) {
+          state.scene.remove(state.thinkerModel)
+        }
+        state.thinkerModel = null
+      }
       
       // Dispose of floor mesh
       if (state.floorMesh) {

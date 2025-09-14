@@ -263,6 +263,35 @@ state.couchModel.position.set(0, 0, 10)         // Museum positioning
 state.couchModel.rotation.y = Math.PI           // Face portfolio walls
 ```
 
+#### ⚡ CRITICAL: Always Add Collision Detection
+**MANDATORY PATTERN**: Every 3D model must be added to the collision detection system to prevent players from walking through objects.
+
+```javascript
+// In updatePhysics() function - Add to collidableObjects array:
+if (state.yourModel) {
+  state.yourModel.traverse((child: any) => {
+    if (child instanceof THREE.Mesh) {
+      child.name = child.name || 'your-model-part' // Name for identification
+      collidableObjects.push(child)
+    }
+  })
+}
+```
+
+#### ⚡ CRITICAL: Consider Player Spawn Positioning
+**MANDATORY PATTERN**: When adding 3D models to the center area, verify player spawn position doesn't cause collision.
+
+**Current Player Spawn**: `(0, 1.8, 8)` - In front of center, facing centerpiece
+**Center Area**: Models at `(0, 0, Z)` should consider spawn clearance
+
+```javascript
+// When positioning central models, consider player spawn at (0, 1.8, 8):
+model.position.set(0, 0, 0)  // ✅ Safe - player spawns in front at Z=8
+model.position.set(0, 0, 8)  // ❌ COLLISION - player spawns inside model
+```
+
+**Why This Matters**: Without collision detection, 3D models are purely visual and players can walk through them, breaking immersion and spatial logic.
+
 #### Material and Lighting Optimization
 - **Shadow Integration**: Enable `castShadow` and `receiveShadow` on all mesh children
 - **Material Updates**: Force `material.needsUpdate = true` after loading
