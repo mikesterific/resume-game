@@ -4,13 +4,13 @@ import type { ProjectData, SkillData, ResumeData } from '@/types/game'
 export const portfolioData = {
   projects: [
     {
-      id: 'portfolio-quest',
-      title: 'Portfolio Quest',
-      description: 'An interactive, retro RPG-inspired portfolio website that showcases professional work through an engaging game experience. Built with Vue 3, Phaser.js, and TypeScript.',
-      technologies: ['Vue 3', 'Phaser.js', 'TypeScript', 'Vite', 'CSS3'],
-      type: 'game' as const,
+      id: 'ea-support-home',
+      title: 'EA Support Home Page',
+      description: 'Clean, user-focused design for EA\'s support portal home page. Prioritized intuitive navigation and quick access to key support functions with a modern, game-inspired aesthetic.',
+      technologies: ['HTML5', 'CSS3', 'JavaScript', 'UX Design', 'Salesforce'],
+      type: 'web' as const,
       demoUrl: '#',
-      image: '/src/assets/images/portfolio/portfolio-quest.jpg' // Add your image path
+      image: '/src/assets/images/portfolio/ea-home.jpg'
     },
     {
       id: 'dell-xps-poc',
@@ -67,22 +67,6 @@ export const portfolioData = {
       technologies: ['JavaScript', 'Data Visualization', 'UX'],
       type: 'web' as const,
       image: '/src/assets/images/portfolio/bcbs-data-ux.jpg' // Add your image path
-    },
-    {
-      id: 'vsi-concept-content',
-      title: 'VSI Concept & Content Creation',
-      description: 'Built the content strategy and user flow for the experience, owning the project from ideation to execution.',
-      technologies: ['HTML5', 'CSS3', 'JavaScript', 'Content Strategy'],
-      type: 'web' as const,
-      image: '/src/assets/images/portfolio/vsi-concept-content.jpg' // Add your image path
-    },
-    {
-      id: 'joe-parker-guitars',
-      title: 'Joe Parker Guitars – Custom Website',
-      description: 'First website for a custom guitar builder, balancing artisan branding with clean UI.',
-      technologies: ['HTML5', 'CSS3', 'JavaScript'],
-      type: 'web' as const,
-      image: '/src/assets/images/portfolio/joe-parker-guitars.jpg' // Add your image path
     },
     {
       id: 'decision-tree-logo',
