@@ -840,7 +840,7 @@ export default defineComponent({
         { 
           position: { x: 0, y: 6, z: 4 }, 
           color: 0xffffff, 
-          intensity: 1.2, 
+          intensity: 1.44, // Increased by 20% (1.2 × 1.2)
           type: 'point',
           distance: 15 
         },
@@ -848,7 +848,7 @@ export default defineComponent({
         { 
           position: { x: 0, y: 8, z: 0 }, 
           color: 0xffffcc, 
-          intensity: 0.8, 
+          intensity: 0.96, // Increased by 20% (0.8 × 1.2)
           type: 'point',
           distance: 12 
         }
@@ -869,7 +869,7 @@ export default defineComponent({
         state.scene!.add(light)
       })
 
-      console.log(`✨ OPTIMIZED: Added ${invisibleLights.length} lights for Thinker (reduced from 7)`)
+      console.log(`✨ OPTIMIZED: Added ${invisibleLights.length} lights for Thinker (reduced from 7, +20% brighter)`)
     }
 
     // Load and position man-holding-mouse 3D model in corner
@@ -1265,11 +1265,15 @@ export default defineComponent({
       const frameHeight = 4.17  // Custom aspect ratio (854/445 ≈ 1.92:1)
       const frameGeometry = new THREE.PlaneGeometry(frameWidth, frameHeight)
       
-      // High-quality canvas for portfolio showcase images
+      // High-quality canvas for portfolio showcase images - ENHANCED: Better color handling
       const canvas = document.createElement('canvas')
       canvas.width = 1024   // Full resolution for crisp portfolio images
       canvas.height = 512   // Maintains 2:1 widescreen aspect ratio
-            const ctx = canvas.getContext('2d')!
+      const ctx = canvas.getContext('2d', {
+        alpha: true,
+        colorSpace: 'srgb',      // ADDED: Explicit sRGB color space
+        desynchronized: false    // ADDED: Better color accuracy
+      })!
       
       // Helper function to draw text-based frame
       const drawTextBasedFrame = () => {
@@ -1324,19 +1328,21 @@ export default defineComponent({
       // Start with text-based frame
       drawTextBasedFrame()
       
-      // High-quality texture settings for portfolio images
+      // High-quality texture settings for portfolio images - FIXED: Reduced pixelation
       const texture = new THREE.CanvasTexture(canvas)
       texture.colorSpace = THREE.SRGBColorSpace
-      texture.generateMipmaps = true // Enable for better quality at distance
-      texture.minFilter = THREE.LinearMipmapLinearFilter // High-quality filtering
+      texture.generateMipmaps = false // DISABLED: Prevents blue pixelation artifacts
+      texture.minFilter = THREE.LinearFilter // SIMPLIFIED: Reduces color artifacts
       texture.magFilter = THREE.LinearFilter
+      texture.wrapS = THREE.ClampToEdgeWrapping // ADDED: Prevents edge artifacts
+      texture.wrapT = THREE.ClampToEdgeWrapping
       
-      // Phase 2: Use MeshStandardMaterial for better image fidelity
+      // Phase 2: Use MeshStandardMaterial for better image fidelity - ENHANCED
       const frameMaterial = new THREE.MeshStandardMaterial({ 
         map: texture,
         metalness: 0.0,      // Non-metallic for accurate image display
-        roughness: 0.8,      // Slightly rough to reduce glare
-        envMapIntensity: 0.1 // Minimal environment reflection
+        roughness: 1.0,      // INCREASED: Fully diffuse to prevent color shifts
+        envMapIntensity: 0.0 // DISABLED: Removes environment color bleeding
       })
       
       const frameMesh = new THREE.Mesh(frameGeometry, frameMaterial)
@@ -1347,8 +1353,8 @@ export default defineComponent({
         img.crossOrigin = 'anonymous' // Handle CORS if needed
         
         img.onload = () => {
-          // Clear canvas and draw the project image
-          ctx.fillStyle = '#000'
+          // Clear canvas and draw the project image - IMPROVED: Better color handling
+          ctx.fillStyle = '#1a1a1a' // CHANGED: Dark gray instead of pure black to reduce contrast artifacts
           ctx.fillRect(0, 0, canvas.width, canvas.height)
           
           // Draw image to fit canvas while maintaining aspect ratio
@@ -1370,16 +1376,21 @@ export default defineComponent({
             offsetX = (canvas.width - drawWidth) / 2
           }
           
+          // ENHANCED: Better image rendering
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight)
           
           // Clean image display - overlay banners removed to eliminate flickering
           
-          // High-quality texture update for loaded images
+          // High-quality texture update for loaded images - FIXED: Matching main texture settings
           const newTexture = new THREE.CanvasTexture(canvas)
           newTexture.colorSpace = THREE.SRGBColorSpace
-          newTexture.generateMipmaps = true // Enable for quality
-          newTexture.minFilter = THREE.LinearMipmapLinearFilter
+          newTexture.generateMipmaps = false // DISABLED: Prevents blue pixelation artifacts
+          newTexture.minFilter = THREE.LinearFilter // SIMPLIFIED: Reduces color artifacts
           newTexture.magFilter = THREE.LinearFilter
+          newTexture.wrapS = THREE.ClampToEdgeWrapping // ADDED: Prevents edge artifacts
+          newTexture.wrapT = THREE.ClampToEdgeWrapping
           frameMaterial.map = newTexture
           frameMaterial.needsUpdate = true
         }
@@ -1401,12 +1412,12 @@ export default defineComponent({
       frameMesh.position.x += Math.cos(position.rotation) * offsetDistance
       frameMesh.position.z += Math.sin(position.rotation) * offsetDistance
       
-      // Add a subtle glow effect
+      // Add a subtle glow effect - REDUCED: Less blue tint
       const glowGeometry = new THREE.PlaneGeometry(frameWidth + 0.5, frameHeight + 0.5)
       const glowMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0x3498db, 
+        color: 0x4a5568, // CHANGED: Neutral gray instead of blue to prevent color contamination
         transparent: true, 
-        opacity: 0.1 
+        opacity: 0.05  // REDUCED: Less opacity to minimize color interference
       })
       const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial)
       glowMesh.position.copy(frameMesh.position)
@@ -1428,11 +1439,11 @@ export default defineComponent({
       const wallHeight = 12
 
       // PERFORMANCE: Increased ambient light to compensate for fewer dynamic lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2) // Increased to 1.2
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.44) // Increased by 20% (1.2 × 1.2)
       state.scene.add(ambientLight)
 
       // Central ceiling light (main illumination) - NO SHADOWS
-      const centralLight = new THREE.PointLight(0xffffff, 2.5, 80)
+      const centralLight = new THREE.PointLight(0xffffff, 3.0, 80) // Increased by 20% (2.5 × 1.2)
       centralLight.position.set(0, wallHeight - 1, 0)
       centralLight.castShadow = false // DISABLED for performance
       state.scene.add(centralLight)
@@ -1444,7 +1455,7 @@ export default defineComponent({
         const x = Math.cos(angle) * 20
         const z = Math.sin(angle) * 20
 
-        const ceilingLight = new THREE.PointLight(0xffffcc, 1.0, 40)
+        const ceilingLight = new THREE.PointLight(0xffffcc, 1.2, 40) // Increased by 20% (1.0 × 1.2)
         ceilingLight.position.set(x, wallHeight - 1, z)
         ceilingLight.castShadow = false // NO SHADOWS for performance
         state.scene.add(ceilingLight)
@@ -1455,7 +1466,7 @@ export default defineComponent({
       // Optimized lighting for the Thinker centerpiece
       setupThinkerLighting()
       
-      console.log('💡 OPTIMIZED: Scene lighting reduced from 11+ to 5 lights total')
+      console.log('💡 OPTIMIZED: Scene lighting reduced from 11+ to 5 lights total (+20% brightness boost)')
     }
 
     // OPTIMIZED: Reduced lighting for the Thinker statue
@@ -1465,7 +1476,7 @@ export default defineComponent({
       // PERFORMANCE: Reduced from 8 lights to 2 (75% reduction)
       
       // Main dramatic spotlight from above-front (key light)
-      const mainSpotlight = new THREE.SpotLight(0xffffff, 1.8)
+      const mainSpotlight = new THREE.SpotLight(0xffffff, 2.16) // Increased by 20% (1.8 × 1.2)
       mainSpotlight.position.set(0, 10, 8)
       mainSpotlight.angle = Math.PI / 3
       mainSpotlight.penumbra = 0.4
@@ -1475,15 +1486,15 @@ export default defineComponent({
       state.scene.add(mainSpotlight)
       state.scene.add(mainSpotlight.target)
 
-      // Single laptop screen light for face illumination
-      const laptopScreenLight = new THREE.PointLight(0x88bbff, 1.5, 15)
+      // Single laptop screen light for face illumination - NEUTRALIZED: Reduced blue tint
+      const laptopScreenLight = new THREE.PointLight(0xaaccdd, 1.8, 15) // FIXED: Less blue, more neutral tone
       laptopScreenLight.position.set(0, 2.8, 1.0)
       state.scene.add(laptopScreenLight)
       
       // Call optimized invisible lighting (now only 2 lights)
       setupInvisibleThinkerLighting()
 
-      console.log('🎭 OPTIMIZED: Thinker lighting reduced to 4 total lights (from 15+)')
+      console.log('🎭 OPTIMIZED: Thinker lighting reduced to 4 total lights (from 15+, +20% brighter)')
     }
 
     // Setup event listeners
