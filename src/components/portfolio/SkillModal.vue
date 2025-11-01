@@ -73,6 +73,7 @@ import { defineComponent } from 'vue'
 import type { SkillData, ProjectData, RadarBlip } from '@/types/game'
 import { portfolioData } from '@/data/portfolio'
 import RadarScreen from '@/components/portfolio/RadarScreen.vue'
+import { gameEventBridge } from '@/game/GameEventBridge'
 
 // Category to project mapping for related projects lookup
 const CATEGORY_PROJECT_MAP: Record<string, string[]> = {

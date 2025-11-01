@@ -13,7 +13,9 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix",
-    "test": "jest --coverage --runInBand"
+    "test": "jest --coverage --runInBand",
+    "build:prod": "NODE_ENV=production npm run build",
+    "preview:prod": "NODE_ENV=production npm run build && vite preview"
   },
   "dependencies": {
     "@types/three": "^0.179.0",

@@ -478,6 +478,10 @@ export default defineComponent({
         state.renderer.setClearColor(0x000011)
         state.renderer.outputColorSpace = THREE.SRGBColorSpace
         
+        // FIXED: Additional settings to prevent grey artifacts
+        state.renderer.toneMapping = THREE.LinearToneMapping // CLEAN: No tone mapping artifacts
+        state.renderer.toneMappingExposure = 1.0 // NEUTRAL: No exposure artifacts
+        
         // Shadows completely disabled for maximum performance
         state.renderer.shadowMap.enabled = false
         
@@ -528,16 +532,22 @@ export default defineComponent({
       // Load professional textures (shared across all surfaces)
       const textureLoader = new THREE.TextureLoader()
       
-      // OPTIMIZED: Rectangular Floor (4 vertices vs 64)
+      // OPTIMIZED: Rectangular Floor (4 vertices vs 64) - CONSISTENT: No grey artifacts
       const floorGeometry = new THREE.PlaneGeometry(width, depth)
       const floorTexture = textureLoader.load('/textures/floor/diffuse.jpg')
       floorTexture.wrapS = THREE.RepeatWrapping
       floorTexture.wrapT = THREE.RepeatWrapping
       floorTexture.repeat.set(8, 6) // Adjusted for rectangular aspect ratio
+      floorTexture.generateMipmaps = false // DISABLED: Prevents texture pixelation
+      floorTexture.minFilter = THREE.LinearFilter // CLEAN: No mipmap artifacts
+      floorTexture.magFilter = THREE.LinearFilter
       
       const floorMaterial = new THREE.MeshStandardMaterial({ 
         map: floorTexture,
-        transparent: false
+        transparent: false,
+        roughness: 0.9,       // ADDED: Highly diffuse to prevent grey artifacts
+        metalness: 0.0,       // ADDED: Non-metallic for clean color
+        envMapIntensity: 0.0  // DISABLED: No environment reflection contamination
       })
       const floor = new THREE.Mesh(floorGeometry, floorMaterial)
       floor.rotation.x = -Math.PI / 2
@@ -548,31 +558,43 @@ export default defineComponent({
       state.floorMesh = floor
       state.scene.add(floor)
 
-      // OPTIMIZED: Rectangular Ceiling (4 vertices vs 64)
+      // OPTIMIZED: Rectangular Ceiling (4 vertices vs 64) - FIXED: No grey artifacts
       const ceilingGeometry = new THREE.PlaneGeometry(width, depth)
       const ceilingTexture = textureLoader.load('/textures/ceiling/diffuse.jpg')
       ceilingTexture.wrapS = THREE.RepeatWrapping
       ceilingTexture.wrapT = THREE.RepeatWrapping
       ceilingTexture.repeat.set(6, 4) // Adjusted for rectangular aspect ratio
+      ceilingTexture.generateMipmaps = false // DISABLED: Prevents texture pixelation
+      ceilingTexture.minFilter = THREE.LinearFilter // CLEAN: No mipmap artifacts
+      ceilingTexture.magFilter = THREE.LinearFilter
       
       const ceilingMaterial = new THREE.MeshStandardMaterial({ 
         map: ceilingTexture,
-        transparent: false
+        transparent: false,
+        roughness: 0.9,       // ADDED: Highly diffuse to prevent grey artifacts
+        metalness: 0.0,       // ADDED: Non-metallic for clean color
+        envMapIntensity: 0.0  // DISABLED: No environment reflection contamination
       })
       const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial)
       ceiling.rotation.x = Math.PI / 2
       ceiling.position.y = wallHeight
-      ceiling.receiveShadow = true
+      ceiling.receiveShadow = false // DISABLED: Prevents grey shadow artifacts
       state.scene.add(ceiling)
 
-      // OPTIMIZED: 4 Rectangular Walls (16 vertices vs 128)
+      // OPTIMIZED: 4 Rectangular Walls (16 vertices vs 128) - FIXED: No grey pixelation
       const wallTexture = textureLoader.load('/textures/walls/diffuse.jpg')
       wallTexture.wrapS = THREE.RepeatWrapping
       wallTexture.wrapT = THREE.RepeatWrapping
+      wallTexture.generateMipmaps = false // DISABLED: Prevents texture pixelation
+      wallTexture.minFilter = THREE.LinearFilter // CLEAN: No mipmap artifacts
+      wallTexture.magFilter = THREE.LinearFilter
       
       const wallMaterial = new THREE.MeshStandardMaterial({ 
         map: wallTexture,
-        side: THREE.BackSide // Only show inner surface
+        side: THREE.BackSide, // Only show inner surface
+        roughness: 0.9,       // ADDED: Highly diffuse to prevent grey artifacts
+        metalness: 0.0,       // ADDED: Non-metallic for clean color
+        envMapIntensity: 0.0  // DISABLED: No environment reflection contamination
       })
 
       // Front Wall (portfolio wall)
@@ -580,7 +602,7 @@ export default defineComponent({
       wallTexture.repeat.set(8, 2) // Horizontal repeat for wide wall
       const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial)
       frontWall.position.set(0, wallHeight / 2, depth / 2)
-      frontWall.receiveShadow = true
+      frontWall.receiveShadow = false // DISABLED: Prevents grey shadow artifacts
       state.scene.add(frontWall)
 
       // Back Wall (portfolio wall)
@@ -588,7 +610,7 @@ export default defineComponent({
       const backWall = new THREE.Mesh(backWallGeometry, wallMaterial)
       backWall.position.set(0, wallHeight / 2, -depth / 2)
       backWall.rotation.y = Math.PI
-      backWall.receiveShadow = true
+      backWall.receiveShadow = false // DISABLED: Prevents grey shadow artifacts
       state.scene.add(backWall)
 
       // Left Wall (portfolio wall)
@@ -597,7 +619,7 @@ export default defineComponent({
       const leftWall = new THREE.Mesh(leftWallGeometry, wallMaterial)
       leftWall.position.set(-width / 2, wallHeight / 2, 0)
       leftWall.rotation.y = Math.PI / 2
-      leftWall.receiveShadow = true
+      leftWall.receiveShadow = false // DISABLED: Prevents grey shadow artifacts
       state.scene.add(leftWall)
 
       // Right Wall (portfolio wall)
@@ -605,7 +627,7 @@ export default defineComponent({
       const rightWall = new THREE.Mesh(rightWallGeometry, wallMaterial)
       rightWall.position.set(width / 2, wallHeight / 2, 0)
       rightWall.rotation.y = -Math.PI / 2
-      rightWall.receiveShadow = true
+      rightWall.receiveShadow = false // DISABLED: Prevents grey shadow artifacts
       state.scene.add(rightWall)
 
       // Add ceiling lights and decorations

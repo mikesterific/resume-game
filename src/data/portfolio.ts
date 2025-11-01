@@ -4,6 +4,15 @@ import type { ProjectData, SkillData, ResumeData } from '@/types/game'
 export const portfolioData = {
   projects: [
     {
+      id: 'portfolio-quest',
+      title: 'Portfolio Quest',
+      description: 'Interactive 3D portfolio experience combining Vue 3, Three.js, and Phaser for an immersive space-themed showcase of skills and projects.',
+      technologies: ['Vue 3', 'TypeScript', 'Three.js', 'Phaser', 'Vite', 'Jest'],
+      type: 'game' as const,
+      demoUrl: '#',
+      image: '/src/assets/images/portfolio/portfolio-quest.jpg'
+    },
+    {
       id: 'ea-support-home',
       title: 'EA Support Home Page',
       description: 'Clean, user-focused design for EA\'s support portal home page. Prioritized intuitive navigation and quick access to key support functions with a modern, game-inspired aesthetic.',

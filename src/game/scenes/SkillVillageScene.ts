@@ -280,7 +280,14 @@ export class SkillVillageScene extends Phaser.Scene {
 
   // Handler methods for interactions
   private handleSkillInteraction = (skillId: string): void => {
-    gameEventBridge.emitGameEvent('game:skill-selected', { skillId })
+    // Create station data for village NPCs (simulated station data)
+    const stationData = {
+      id: `village-${skillId}`,
+      x: 0,
+      y: 0,
+      name: `${skillId} Station`
+    }
+    gameEventBridge.emitGameEvent('game:skill-selected', { skillId, stationData })
   }
 
   private handleSceneTransition = (sceneName: string): void => {
