@@ -31,22 +31,17 @@ jobs:
         with:
           node-version: '22.12.0'
           
-      - name: Enable Corepack and install Yarn
-        run: |
-          corepack enable
-          npm install -g yarn
-          
       - name: Install dependencies
         run: |
           node --version
-          yarn --version
-          yarn install --frozen-lockfile || yarn install
+          npm cache clean --force
+          npm install
         
       - name: Run tests
-        run: yarn test
+        run: npm run test
         
       - name: Build
-        run: yarn build
+        run: npm run build
         env:
           NODE_ENV: production
           
@@ -60,11 +55,11 @@ jobs:
 
   # Deployment job
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
