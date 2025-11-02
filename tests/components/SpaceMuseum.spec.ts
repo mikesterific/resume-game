@@ -139,7 +139,7 @@ describe('SpaceMuseum Component Logic', () => {
         mockGLTFLoader.loadAsync.mockResolvedValue({ scene: mockGltfScene })
 
         // Simulate loadCouchModel function logic
-        const couchPath = '/src/assets/3d/base_basic_pbr.glb'
+        const couchPath = 'src/assets/3d/base_basic_pbr.glb'
         
         try {
           const gltf = await mockGLTFLoader.loadAsync(couchPath)
@@ -157,7 +157,7 @@ describe('SpaceMuseum Component Logic', () => {
         const mockGltfScene = { ...mockThreeGroup }
         mockGLTFLoader.loadAsync.mockResolvedValue({ scene: mockGltfScene })
 
-        const gltf = await mockGLTFLoader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
+        const gltf = await mockGLTFLoader.loadAsync('src/assets/3d/base_basic_pbr.glb')
         const couchModel = gltf.scene
 
         // Test scaling
@@ -178,7 +178,7 @@ describe('SpaceMuseum Component Logic', () => {
         mockGLTFLoader.loadAsync.mockRejectedValue(mockError)
 
         try {
-          await mockGLTFLoader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
+          await mockGLTFLoader.loadAsync('src/assets/3d/base_basic_pbr.glb')
         } catch (error) {
           expect(error).toBe(mockError)
           expect((error as Error).message).toBe('Failed to load couch model')
@@ -191,7 +191,7 @@ describe('SpaceMuseum Component Logic', () => {
         const mockGltfScene = { ...mockThreeGroup }
         mockGLTFLoader.loadAsync.mockResolvedValue({ scene: mockGltfScene })
 
-        const benchPath = '/src/assets/3d/bench_pbr.glb'
+        const benchPath = 'src/assets/3d/bench_pbr.glb'
         
         const gltf = await mockGLTFLoader.loadAsync(benchPath)
         const benchModel = gltf.scene
@@ -204,7 +204,7 @@ describe('SpaceMuseum Component Logic', () => {
         const mockGltfScene = { ...mockThreeGroup }
         mockGLTFLoader.loadAsync.mockResolvedValue({ scene: mockGltfScene })
 
-        const gltf = await mockGLTFLoader.loadAsync('/src/assets/3d/bench_pbr.glb')
+        const gltf = await mockGLTFLoader.loadAsync('src/assets/3d/bench_pbr.glb')
         const benchModel = gltf.scene
 
         // Test scaling
@@ -225,7 +225,7 @@ describe('SpaceMuseum Component Logic', () => {
         mockGLTFLoader.loadAsync.mockRejectedValue(mockError)
 
         try {
-          await mockGLTFLoader.loadAsync('/src/assets/3d/bench_pbr.glb')
+          await mockGLTFLoader.loadAsync('src/assets/3d/bench_pbr.glb')
         } catch (error) {
           expect(error).toBe(mockError)
           expect((error as Error).message).toBe('Failed to load bench model')
@@ -424,11 +424,11 @@ describe('SpaceMuseum Component Logic', () => {
           .mockResolvedValueOnce({ scene: mockBenchScene })
 
         // Load couch
-        const couchGltf = await mockGLTFLoader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
+        const couchGltf = await mockGLTFLoader.loadAsync('src/assets/3d/base_basic_pbr.glb')
         mockScene.add(couchGltf.scene)
 
         // Load bench
-        const benchGltf = await mockGLTFLoader.loadAsync('/src/assets/3d/bench_pbr.glb')
+        const benchGltf = await mockGLTFLoader.loadAsync('src/assets/3d/bench_pbr.glb')
         mockScene.add(benchGltf.scene)
 
         expect(mockScene.add).toHaveBeenCalledWith(mockCouchScene)
@@ -440,7 +440,7 @@ describe('SpaceMuseum Component Logic', () => {
         mockGLTFLoader.loadAsync.mockRejectedValue(new Error('Loading failed'))
 
         try {
-          await mockGLTFLoader.loadAsync('/src/assets/3d/base_basic_pbr.glb')
+          await mockGLTFLoader.loadAsync('src/assets/3d/base_basic_pbr.glb')
         } catch (error) {
           // Model should not be added if loading fails
         }
