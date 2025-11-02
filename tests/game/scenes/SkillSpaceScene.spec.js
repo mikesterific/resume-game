@@ -264,9 +264,9 @@ describe('SkillSpaceScene', () => {
     const imageSpy = jest.spyOn(scene.load, 'image')
     scene.preload()
     // At least one starbase plus enemy assets
-    expect(imageSpy).toHaveBeenCalledWith('enemy-ship', 'src/assets/images/enemy-ship.png')
-    expect(imageSpy).toHaveBeenCalledWith('enemy-explosion', 'src/assets/images/emeny-explode.png')
-    expect(imageSpy).toHaveBeenCalledWith('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
+    expect(imageSpy).toHaveBeenCalledWith('enemy-ship', 'assets/images/enemy-ship.png')
+    expect(imageSpy).toHaveBeenCalledWith('enemy-explosion', 'assets/images/emeny-explode.png')
+    expect(imageSpy).toHaveBeenCalledWith('hero-explosion', 'assets/images/HeroShipExplodes.png')
     expect(onSpy).toHaveBeenCalledWith('filecomplete', expect.any(Function))
     expect(onSpy).toHaveBeenCalledWith('loaderror', expect.any(Function))
   })

@@ -295,7 +295,7 @@ export default defineComponent({
         loadSettings()
         
         // Create background music audio element
-        state.backgroundMusic = new Audio('src/assets/sound/I like this one.mp3')
+        state.backgroundMusic = new Audio('assets/sound/I like this one.mp3')
         state.backgroundMusic.loop = true
         state.backgroundMusic.volume = musicEnabled.value ? musicVolume.value : 0
         state.soundEnabled = musicEnabled.value
@@ -683,7 +683,7 @@ export default defineComponent({
       
       try {
         console.log('🪑 Loading couch models...')
-        const gltf = await loader.loadAsync('src/assets/3d/base_basic_pbr.glb')
+        const gltf = await loader.loadAsync('assets/3d/base_basic_pbr.glb')
         
         // Define expanded couch positions - original 4 + 5 new ones for better space filling
         const couchPositions = [
@@ -753,7 +753,7 @@ export default defineComponent({
       
       try {
         console.log('🪑 Loading bench models...')
-        const gltf = await loader.loadAsync('src/assets/3d/bench_pbr.glb')
+        const gltf = await loader.loadAsync('assets/3d/bench_pbr.glb')
         
         // Define bench positions in front of each artwork (matching portfolio frame positions)
         const benchPositions = [
@@ -902,7 +902,7 @@ export default defineComponent({
       
       try {
         console.log('🐭 Loading man-holding-mouse model...')
-        const gltf = await loader.loadAsync('src/assets/3d/man-holding-mouse.glb')
+        const gltf = await loader.loadAsync('assets/3d/man-holding-mouse.glb')
         
         const mouseManModel = gltf.scene.clone()
         
@@ -961,7 +961,7 @@ export default defineComponent({
       
       try {
         console.log('👸 Loading Cleo model...')
-        const gltf = await loader.loadAsync('src/assets/3d/cleo.glb')
+        const gltf = await loader.loadAsync('assets/3d/cleo.glb')
         
         const cleoModel = gltf.scene.clone()
         
@@ -1028,7 +1028,7 @@ export default defineComponent({
       
       try {
         console.log('🏛️ Loading Socrates model...')
-        const gltf = await loader.loadAsync('src/assets/3d/socrotes.glb')
+        const gltf = await loader.loadAsync('assets/3d/socrotes.glb')
         
         const socratesModel = gltf.scene.clone()
         
@@ -1087,7 +1087,7 @@ export default defineComponent({
       
       try {
         console.log('☕ Loading Starbucks model...')
-        const gltf = await loader.loadAsync('src/assets/3d/starbucks.glb')
+        const gltf = await loader.loadAsync('assets/3d/starbucks.glb')
         
         const starbucksModel = gltf.scene.clone()
         
@@ -1146,7 +1146,7 @@ export default defineComponent({
       
       try {
         console.log('🎭 Loading thinker model...')
-        const gltf = await loader.loadAsync('src/assets/3d/thinker.glb')
+        const gltf = await loader.loadAsync('assets/3d/thinker.glb')
         
         const thinkerModel = gltf.scene.clone()
         

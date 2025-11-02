@@ -27,8 +27,8 @@ describe('PlayerSystem', () => {
   test('preloadPlayerAssets loads textures', () => {
     const spy = jest.spyOn(scene.load, 'image')
     preloadPlayerAssets(scene)
-    expect(spy).toHaveBeenCalledWith('hero-spaceship-off', '/src/assets/images/HeroSpaceShipOff.png')
-    expect(spy).toHaveBeenCalledWith('hero-spaceship-on', '/src/assets/images/HeroSpaceShipOn.png')
+    expect(spy).toHaveBeenCalledWith('hero-spaceship-off', 'assets/images/HeroSpaceShipOff.png')
+    expect(spy).toHaveBeenCalledWith('hero-spaceship-on', 'assets/images/HeroSpaceShipOn.png')
   })
 
   test('updatePlayerEngineState toggles textures only on state change', () => {

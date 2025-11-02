@@ -10,7 +10,7 @@ export const portfolioData = {
       technologies: ['Vue 3', 'TypeScript', 'Three.js', 'Phaser', 'Vite', 'Jest'],
       type: 'game' as const,
       demoUrl: '#',
-      image: 'src/assets/images/portfolio/portfolio-quest.jpg'
+      image: 'assets/images/portfolio/portfolio-quest.jpg'
     },
     {
       id: 'ea-support-home',
@@ -19,7 +19,7 @@ export const portfolioData = {
       technologies: ['HTML5', 'CSS3', 'JavaScript', 'UX Design', 'Salesforce'],
       type: 'web' as const,
       demoUrl: '#',
-      image: 'src/assets/images/portfolio/ea-home.jpg'
+      image: 'assets/images/portfolio/ea-home.jpg'
     },
     {
       id: 'ea-support-site',
@@ -27,7 +27,7 @@ export const portfolioData = {
       description: "Design contributions for EA's internal support site during a greenfield rebuild, alongside architectural responsibilities.",
       technologies: ['Salesforce', 'AWS', 'JavaScript', 'CSS3'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/ea-support-site.jpg' // Add your image path
+      image: 'assets/images/portfolio/ea-support-site.jpg' // Add your image path
     },
     {
       id: 'decision-tree-logo',
@@ -35,7 +35,7 @@ export const portfolioData = {
       description: 'Two-color print design that visually mimicked full-color output—economical and clever.',
       technologies: ['Branding', 'Logo Design'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/decision-tree-logo.jpg' // Add your image path
+      image: 'assets/images/portfolio/decision-tree-logo.jpg' // Add your image path
     },
     {
       id: 'dell-home-poc',
@@ -43,7 +43,7 @@ export const portfolioData = {
       description: 'Foundational POC for Dell\'s homepage which influenced the design and layout of the global production homepage.',
       technologies: ['HTML5', 'CSS3', 'JavaScript'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/dell-home-poc.jpg' // Add your image path
+      image: 'assets/images/portfolio/dell-home-poc.jpg' // Add your image path
     },
     {
       id: 'dell-home-live',
@@ -51,7 +51,7 @@ export const portfolioData = {
       description: 'Greenfield architecture deployed globally in under 30 days, built collaboratively with Dell tiger teams across countries.',
       technologies: ['AngularJS', 'ASP.NET MVC', 'Performance', 'Micro Frontends'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/dell-home-live.jpg' // Add your image path
+      image: 'assets/images/portfolio/dell-home-live.jpg' // Add your image path
     },
     {
       id: 'dell-xps-poc',
@@ -59,7 +59,7 @@ export const portfolioData = {
       description: "Visionary UI prototype showcasing Dell's front-end capabilities. Sparked Dell's premium branding initiative and inspired a broader digital transformation.",
       technologies: ['HTML5', 'CSS3', 'JavaScript', 'Performance'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/dell-xps-poc.jpg' // Add your image path
+      image: 'assets/images/portfolio/dell-xps-poc.jpg' // Add your image path
     },
     {
       id: 'citi-flash-ux',
@@ -67,7 +67,7 @@ export const portfolioData = {
       description: 'Initially hired as a designer; rapidly transitioned into Flash development during the period when Flash was industry-standard.',
       technologies: ['Flash', 'ActionScript', 'UX'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/citi-flash-ux.jpg' // Add your image path
+      image: 'assets/images/portfolio/citi-flash-ux.jpg' // Add your image path
     },
     {
       id: 'bcbs-data-ux',
@@ -75,7 +75,7 @@ export const portfolioData = {
       description: 'Redesign focused on simplifying complex data into digestible, intuitive UX patterns. Widely praised internally.',
       technologies: ['JavaScript', 'Data Visualization', 'UX'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/bcbs-data-ux.jpg' // Add your image path
+      image: 'assets/images/portfolio/bcbs-data-ux.jpg' // Add your image path
     },
     {
       id: 'dell-xps-landing',
@@ -83,7 +83,7 @@ export const portfolioData = {
       description: 'Launched after leadership buy-in from the POC. Implemented with Dell\'s internal design team as part of a modernized brand strategy.',
       technologies: ['HTML5', 'CSS3', 'JavaScript'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/dell-xps-landing.jpg' // Add your image path
+      image: 'assets/images/portfolio/dell-xps-landing.jpg' // Add your image path
     },
     {
       id: 'bizatomic-logo',
@@ -91,7 +91,7 @@ export const portfolioData = {
       description: 'Energetic branding concept with bold lines and a tight color palette for a startup launch.',
       technologies: ['Branding', 'Logo Design'],
       type: 'web' as const,
-      image: 'src/assets/images/portfolio/bizatomic-logo.jpg' // Add your image path
+      image: 'assets/images/portfolio/bizatomic-logo.jpg' // Add your image path
     }
   ] as ProjectData[],
 

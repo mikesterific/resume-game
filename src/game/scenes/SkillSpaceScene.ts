@@ -253,17 +253,17 @@ export class SkillSpaceScene extends Phaser.Scene {
     }
 
     // Load enemy ship asset (removed leading slash for GitHub Pages compatibility)
-    this.load.image('enemy-ship', 'src/assets/images/enemy-ship.png')
+    this.load.image('enemy-ship', 'assets/images/enemy-ship.png')
 
     // Load explosion sprite (note: file name is intentionally spelled as in asset path)
-    this.load.image('enemy-explosion', 'src/assets/images/emeny-explode.png')
+    this.load.image('enemy-explosion', 'assets/images/emeny-explode.png')
 
     // Load hero explosion sprite
-    this.load.image('hero-explosion', 'src/assets/images/HeroShipExplodes.png')
+    this.load.image('hero-explosion', 'assets/images/HeroShipExplodes.png')
     
     // Load laser sound effects for space combat
-    this.load.audio('laserSound', 'src/assets/sound/laser.mp3')
-    this.load.audio('enemyLaserSound', 'src/assets/sound/enemy_laser.mp3')
+    this.load.audio('laserSound', 'assets/sound/laser.mp3')
+    this.load.audio('enemyLaserSound', 'assets/sound/enemy_laser.mp3')
     
     // Add load event listeners for debugging
       // Intentionally silent
