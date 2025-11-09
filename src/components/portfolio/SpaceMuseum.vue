@@ -149,9 +149,11 @@ interface MuseumState {
   yawObject: THREE.Object3D | null
   pitchObject: THREE.Object3D | null
   isPointerLocked: boolean
-  // Background music state
+    // Background music state  
   backgroundMusic: HTMLAudioElement | null
   soundEnabled: boolean
+  // Jetpack sound effect
+  jetpackSound: HTMLAudioElement | null
 
 }
 
@@ -212,7 +214,9 @@ export default defineComponent({
         jumpSpeed: 8,
         groundHeight: 1.8, // Human eye height
         jumpsRemaining: 2, // Start with full jumps available
-        maxJumps: 2 // Allow double jump
+        maxJumps: 2, // Allow double jump
+        jetpackFired: false, // Track if jetpack was used for this jump sequence
+        jumpCount: 0 // Track which jump in sequence this is (0 = grounded, 1 = first jump, 2 = second jump)
       },
       // Custom camera controls
       yawObject: null,
@@ -220,7 +224,9 @@ export default defineComponent({
       isPointerLocked: false,
       // Background music state  
       backgroundMusic: null,
-      soundEnabled: true // Default to sound ON for immersive experience
+      soundEnabled: true, // Default to sound ON for immersive experience
+      // Jetpack sound effect
+      jetpackSound: null
     }
 
     // Settings management
@@ -279,6 +285,11 @@ export default defineComponent({
             state.backgroundMusic.pause()
           }
         }
+        
+        // Update jetpack sound settings (independent of music toggle)
+        if (state.jetpackSound) {
+          state.jetpackSound.volume = musicVolume.value * 0.7
+        }
       } catch (error) {
         console.warn('Failed to save settings:', error)
       }
@@ -295,10 +306,14 @@ export default defineComponent({
         loadSettings()
         
         // Create background music audio element
-        state.backgroundMusic = new Audio('assets/sound/I like this one.mp3')
-        state.backgroundMusic.loop = true
-        state.backgroundMusic.volume = musicEnabled.value ? musicVolume.value : 0
-        state.soundEnabled = musicEnabled.value
+              state.backgroundMusic = new Audio('assets/sound/I like this one.mp3')
+      state.backgroundMusic.loop = true
+      state.backgroundMusic.volume = musicEnabled.value ? musicVolume.value : 0
+      state.soundEnabled = musicEnabled.value
+      
+      // Initialize jetpack sound effect
+      state.jetpackSound = new Audio('assets/sound/jumpack.wav')
+      state.jetpackSound.volume = musicVolume.value * 0.7 // Always use volume setting, independent of music toggle
         
         // Handle loading errors
         state.backgroundMusic.addEventListener('error', (e) => {
@@ -333,6 +348,34 @@ export default defineComponent({
       if (state.backgroundMusic) {
         state.backgroundMusic.pause()
         state.backgroundMusic.currentTime = 0
+      }
+    }
+
+    // Play jetpack sound effect
+    const playJetpackSound = (): void => {
+      if (state.jetpackSound) {
+        try {
+          state.jetpackSound.currentTime = 0 // Reset to start for rapid firing
+          state.jetpackSound.volume = musicVolume.value * 0.7 // Respect volume settings
+          state.jetpackSound.play().catch(error => {
+            console.warn('[SpaceMuseum] Error playing jetpack sound:', error)
+          })
+        } catch (error) {
+          console.warn('[SpaceMuseum] Jetpack sound error:', error)
+        }
+      }
+    }
+
+    // Stop jetpack sound effect
+    const stopJetpackSound = (): void => {
+      if (state.jetpackSound) {
+        try {
+          state.jetpackSound.pause()
+          state.jetpackSound.currentTime = 0 // Reset for next use
+          console.log('🛑 Jetpack sound stopped - landed')
+        } catch (error) {
+          console.warn('[SpaceMuseum] Error stopping jetpack sound:', error)
+        }
       }
     }
 
@@ -1634,8 +1677,22 @@ export default defineComponent({
     // Jump mechanics
     const initiateJump = (): void => {
       if (state.physics.jumpsRemaining > 0) {
+        // Increment jump count for this sequence
+        state.physics.jumpCount++
+        
         // Second jump gets a slight boost for extra fun
-        const jumpMultiplier = state.physics.jumpsRemaining === 1 ? 1.1 : 1.0
+        const jumpMultiplier = state.physics.jumpCount === 2 ? 1.1 : 1.0
+        
+        // 🚀 JETPACK FIRING: Play sound effect ONLY on actual second jump
+        // Note: Jetpack sound is independent of music setting (gameplay sound, not ambient)
+        if (state.physics.jumpCount === 2) {
+          playJetpackSound()
+          state.physics.jetpackFired = true // Mark that jetpack was used
+          console.log('🚀 Jetpack fired! Double jump activated (jump #2 in sequence)')
+        } else {
+          console.log(`👟 Regular jump #${state.physics.jumpCount} - no jetpack`)
+        }
+        
         state.physics.velocityY = state.physics.jumpSpeed * jumpMultiplier
         state.physics.jumpsRemaining--
         state.physics.isGrounded = false
@@ -1795,13 +1852,22 @@ export default defineComponent({
         // Land on the detected surface
         state.yawObject.position.y = targetGroundLevel + playerGroundHeight
         state.physics.velocityY = 0
+        
+        // Check if we need to stop jetpack sound before setting grounded
+        if (!state.physics.isGrounded && state.physics.jetpackFired) {
+          stopJetpackSound()
+          state.physics.jetpackFired = false // Reset jetpack flag
+        }
+        
         state.physics.isGrounded = true
         state.physics.jumpsRemaining = state.physics.maxJumps // Reset jumps when landing
+        state.physics.jumpCount = 0 // Reset jump sequence counter when landing
         
         // Optional: Log what surface we landed on (great for debugging!)
         if (landedOnSurface && landedOnSurface !== 'floor') {
           console.log(`🎯 Landed on: ${landedOnSurface} at height ${targetGroundLevel.toFixed(2)}`)
         }
+        console.log('🏃 Landed - jump sequence reset')
       } else if (distanceToGround > playerGroundHeight + 0.1) {
         // Player is in the air
         state.physics.isGrounded = false
@@ -1910,6 +1976,12 @@ export default defineComponent({
       
       // Stop background music
       stopBackgroundMusic()
+      
+      // Clean up jetpack sound
+      if (state.jetpackSound) {
+        state.jetpackSound.pause()
+        state.jetpackSound = null
+      }
       
       // Dispose of 3D models
       state.couchModels.forEach(couchModel => {
