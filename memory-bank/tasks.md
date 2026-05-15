@@ -1,5 +1,27 @@
 # Tasks - Resume Game (SOURCE OF TRUTH)
 
+## ✅ LEVEL 2 TASK: Subfolder Deep-Link Routing - REFLECTION COMPLETE
+
+**Complexity**: Level 2 (Simple Enhancement / Deployment Fix)
+**Goal**: Ensure direct refreshes and shared links to `/portfolio-quest/game` and `/portfolio-quest/museum` work when deployed under a server subfolder.
+
+### Status
+- [x] Implementation complete
+- [x] User validation complete
+- [x] Reflection complete
+- [ ] Archiving
+
+### Implementation Summary
+- Set the Vite base path for `/portfolio-quest/` subfolder deployment.
+- Added static-host fallback files in `public/.htaccess` and `public/_redirects`.
+- Fixed the `SpaceMuseum.vue` physics state interface so the full build passes.
+
+### Reflection Highlights
+- **What Went Well**: The deployed URL and host 404 page made it clear that the issue was server fallback behavior, not missing Vue routes.
+- **Challenges**: The first fallback assumption targeted GitHub Pages, but the app is deployed on a non-GitHub static host.
+- **Lessons Learned**: Static SPA deep links need both correct Vite asset base paths and server rewrites to the SPA entrypoint.
+- **Reflection Document**: [Subfolder Deep-Link Routing](reflection/reflection-deep-link-subfolder-routing.md)
+
 ## IMPLEMENTATION ROADMAP - PORTFOLIO QUEST
 
 ### 🏗️ PHASE 1: FOUNDATION & SETUP (Week 1-2)
